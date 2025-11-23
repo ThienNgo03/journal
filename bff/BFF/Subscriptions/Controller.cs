@@ -1,0 +1,44 @@
+﻿using BFF.Subscriptions.All;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace BFF.Subscriptions;
+
+[Route("api/subcriptions")]
+[ApiController]
+public class Controller : ControllerBase
+{
+    private readonly IMapper _mapper;
+    public Controller(IMapper mapper)
+    {
+        _mapper = mapper;
+    }
+
+    [HttpGet("all")]
+    public async Task<IActionResult> All([FromQuery] All.Parameters parameters)
+    {
+        var item = new Item{};
+        for (int i = 0; i < 5; i++) 
+        {
+            item.AppUsages.Add(new AppUsage());
+        }
+        for (int i = 0; i < 5; i++) 
+        {
+            item.CustomBrush.Add(string.Empty);
+        }
+
+        _mapper.All.SetMonth(item);
+        _mapper.All.SetCompany(item.AppUsages);
+        _mapper.All.SetIcon(item.AppUsages);
+        _mapper.All.SetSubscription(item.AppUsages);
+        _mapper.All.SetUsagePercent(item.AppUsages);
+        _mapper.All.SetPrice(item.AppUsages);
+        _mapper.All.SetHex(item.AppUsages);
+        _mapper.All.SetDayLeft(item.AppUsages);
+        _mapper.All.SetIsPaid(item.AppUsages);
+        _mapper.All.SetIsDiscountApplied(item.AppUsages);
+        _mapper.All.SetCustomBrush(item.CustomBrush);
+
+        return Ok(item);
+    }
+}
