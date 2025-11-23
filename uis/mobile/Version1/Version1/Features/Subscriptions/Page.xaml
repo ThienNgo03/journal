@@ -3,163 +3,418 @@
     x:Class="Version1.Features.Subscriptions.Page"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:card="clr-namespace:Version1.Features.Subscriptions.ContentViews.Card"
     xmlns:local="clr-namespace:Version1.Features.Subscriptions"
-    xmlns:progress="clr-namespace:Plugin.Maui.MauiProgressView;assembly=Plugin.Maui.MauiProgressView"
-    xmlns:signalR="clr-namespace:Version1.Features.WebSocket.SignalR"
     xmlns:syncfusionToolkit="http://schemas.syncfusion.com/maui/toolkit"
-    xmlns:ui="clr-namespace:UI"
-    Title="Page"
-    x:DataType="local:ViewModel"
-    HideSoftInputOnTapped="True"
-    Loaded="ContentPage_Loaded"
-    Shell.NavBarIsVisible="True">
-
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    BackgroundColor="#f7f8fa">
     <ContentPage.Resources>
-        <FontImageSource
-            x:Key="SearchIcon"
-            FontFamily="{x:Static ui:FontNames.FluentSystemIconsRegular}"
-            Glyph="{x:Static ui:FluentUIIcon.Ic_fluent_search_48_regular}"
-            Color="Cyan" />
-        <FontImageSource
-            x:Key="InfoIcon"
-            FontFamily="{x:Static ui:FontNames.FluentSystemIconsRegular}"
-            Glyph="{x:Static ui:FluentUIIcon.Ic_fluent_info_28_regular}"
-            Color="White" />
-        <FontImageSource
-            x:Key="CalendarAddIcon"
-            FontFamily="{x:Static ui:FontNames.FluentSystemIconsRegular}"
-            Glyph="{x:Static ui:FluentUIIcon.Ic_fluent_calendar_add_28_regular}"
-            Color="White" />
-        <DataTemplate x:Key="ItemsFooterTemplate">
-            <Grid HeightRequest="60" />
-        </DataTemplate>
-        <LinearItemsLayout
-            x:Key="ItemsLayout"
-            ItemSpacing="16"
-            Orientation="Vertical"
-            SnapPointsType="None" />
-        <DataTemplate x:Key="ChartLabelTemplate" x:DataType="local:AppUsage">
-            <HorizontalStackLayout Spacing="5">
-                <Label
-                    FontSize="8"
-                    Text="{x:Binding AppName}"
-                    TextColor="Black" />
-                <Label
-                    FontSize="8"
-                    Text=" : "
-                    TextColor="Black" />
-                <Label
-                    FontSize="8"
-                    Text="{x:Binding UsagePercent}"
-                    TextColor="Black" />
-            </HorizontalStackLayout>
-        </DataTemplate>
+        <x:Array x:Key="AppUsages" Type="{x:Type local:AppUsage}">
+            <local:AppUsage
+                Company="Google"
+                DayLeft="12"
+                Discount="$2.00 (-10%)"
+                Hex="#FF0000"
+                Icon="youtube.png"
+                IsDiscountApplied="True"
+                IsPaid="True"
+                Price="19.99"
+                Subscription="YouTube"
+                UsagePercent="14" />
+            <local:AppUsage
+                Company="Apple"
+                DayLeft="15"
+                Discount="$1.80 (-10%)"
+                Hex="#FF4E6B"
+                Icon="apple_music.jpg"
+                IsDiscountApplied="False"
+                IsPaid="True"
+                Price="17.99"
+                Subscription="Apple Music"
+                UsagePercent="13" />
+            <local:AppUsage
+                Company="Spotify"
+                DayLeft="20"
+                Discount="$1.60 (-10%)"
+                Hex="#1ED760"
+                Icon="spotify.png"
+                IsDiscountApplied="True"
+                IsPaid="True"
+                Price="15.99"
+                Subscription="Spotify"
+                UsagePercent="11" />
+            <local:AppUsage
+                Company="Amazon"
+                DayLeft="25"
+                Discount="$1.40 (-10%)"
+                Hex="#00A8E1"
+                Icon="amazon_prime.png"
+                IsDiscountApplied="False"
+                IsPaid="True"
+                Price="13.99"
+                Subscription="Amazon Prime"
+                UsagePercent="10" />
+            <local:AppUsage
+                Company="Netflix Inc."
+                DayLeft="18"
+                Discount="$1.30 (-10%)"
+                Hex="#E50914"
+                Icon="netflix.png"
+                IsDiscountApplied="True"
+                IsPaid="True"
+                Price="12.99"
+                Subscription="Netflix"
+                UsagePercent="9" />
+            <local:AppUsage
+                Company="Disney"
+                DayLeft="22"
+                Discount="$1.10 (-10%)"
+                Hex="#113CCF"
+                Icon="disney_plus.jpg"
+                IsDiscountApplied="False"
+                IsPaid="True"
+                Price="10.99"
+                Subscription="Disney+"
+                UsagePercent="8" />
+            <local:AppUsage
+                Company="Sony"
+                DayLeft="16"
+                Discount="$0.90 (-10%)"
+                Hex="#F47521"
+                Icon="crunchyroll.jpg"
+                IsDiscountApplied="True"
+                IsPaid="False"
+                Price="8.99"
+                Subscription="Crunchyroll"
+                UsagePercent="7" />
+            <local:AppUsage
+                Company="Warner Bros."
+                DayLeft="10"
+                Discount="$0.80 (-10%)"
+                Hex="#5A2D82"
+                Icon="warner_bros.jpg"
+                IsDiscountApplied="False"
+                IsPaid="True"
+                Price="7.99"
+                Subscription="HBO Max"
+                UsagePercent="6" />
+            <local:AppUsage
+                Company="Hostinger"
+                DayLeft="30"
+                Discount="$0.70 (-10%)"
+                Hex="#673AB7"
+                Icon="hostinger.jpg"
+                IsDiscountApplied="True"
+                IsPaid="True"
+                Price="6.99"
+                Subscription="Hostinger VPS"
+                UsagePercent="5" />
+            <local:AppUsage
+                Company="GitHub"
+                DayLeft="14"
+                Discount="$0.60 (-10%)"
+                Hex="#333333"
+                Icon="github.png"
+                IsDiscountApplied="False"
+                IsPaid="True"
+                Price="5.99"
+                Subscription="GitHub Pro"
+                UsagePercent="4" />
+            <local:AppUsage
+                Company="Microsoft"
+                DayLeft="19"
+                Discount="$0.50 (-10%)"
+                Hex="#512BD4"
+                Icon="dotnet_bot.png"
+                IsDiscountApplied="True"
+                IsPaid="True"
+                Price="4.99"
+                Subscription=".NET Bot"
+                UsagePercent="3" />
+            <local:AppUsage
+                Company="Microsoft"
+                DayLeft="28"
+                Discount="$0.40 (-10%)"
+                Hex="#0078D4"
+                Icon="onedrive.png"
+                IsDiscountApplied="False"
+                IsPaid="True"
+                Price="3.99"
+                Subscription="OneDrive"
+                UsagePercent="2" />
+            <local:AppUsage
+                Company="Microsoft"
+                DayLeft="17"
+                Discount="$0.30 (-10%)"
+                Hex="#008AD7"
+                Icon="azure.png"
+                IsDiscountApplied="True"
+                IsPaid="False"
+                Price="2.99"
+                Subscription="Azure Dev"
+                UsagePercent="1" />
+            <local:AppUsage
+                Company="Amazon"
+                DayLeft="26"
+                Discount="$0.20 (-10%)"
+                Hex="#232F3E"
+                Icon="aws.png"
+                IsDiscountApplied="False"
+                IsPaid="True"
+                Price="1.99"
+                Subscription="AWS Free Tier"
+                UsagePercent="1" />
+        </x:Array>
+
+        <x:Array x:Key="CustomBrushes" Type="{x:Type Brush}">
+            <SolidColorBrush Color="#FF4C4C" />
+            <!--  YouTube: đỏ sáng  -->
+            <SolidColorBrush Color="#FF6F91" />
+            <!--  Apple Music: hồng đào  -->
+            <SolidColorBrush Color="#4CAF50" />
+            <!--  Spotify: xanh lá sáng  -->
+            <SolidColorBrush Color="#00BFFF" />
+            <!--  Amazon Prime: xanh dương sáng  -->
+            <SolidColorBrush Color="#FF6347" />
+            <!--  Netflix: đỏ cam  -->
+            <SolidColorBrush Color="#5C6BC0" />
+            <!--  Disney+: xanh tím sáng  -->
+            <SolidColorBrush Color="#FFA500" />
+            <!--  Crunchyroll: cam sáng  -->
+            <SolidColorBrush Color="#BA68C8" />
+            <!--  HBO Max: tím pastel  -->
+            <SolidColorBrush Color="#BDBDBD" />
+            <!--  Hostinger: xám sáng  -->
+            <SolidColorBrush Color="#9C27B0" />
+            <!--  GitHub: tím sáng  -->
+            <SolidColorBrush Color="#64B5F6" />
+            <!--  .NET Bot: xanh trời  -->
+            <SolidColorBrush Color="#4FC3F7" />
+            <!--  OneDrive: xanh biển sáng  -->
+            <SolidColorBrush Color="#90CAF9" />
+            <!--  Azure: xanh lam pastel  -->
+            <SolidColorBrush Color="#FFD700" />
+            <!--  AWS: vàng sáng  -->
+        </x:Array>
+
+        <local:SumPriceConverter x:Key="SumPriceConverter" />
+        <local:USDToVNDConverter x:Key="USDToVNDConverter" />
+        <local:TextDecorationsConverter x:Key="TextDecorationsConverter" />
+        <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+
     </ContentPage.Resources>
 
 
+    <Grid Padding="16" RowSpacing="16">
+        <CollectionView
+            x:Name="MainList"
+            ItemsSource="{StaticResource AppUsages}"
+            SelectionChanged="CollectionView_SelectionChanged"
+            SelectionMode="Single">
+            <CollectionView.Header>
+                <Border
+                    Grid.Row="1"
+                    Padding="16"
+                    BackgroundColor="#ffffff"
+                    MaximumHeightRequest="800"
+                    StrokeShape="RoundRectangle 8"
+                    StrokeThickness="0">
+                    <VerticalStackLayout Spacing="8">
 
-    <Grid
-        Padding="16"
-        Background="{x:StaticResource GradientBackground}"
-        RowSpacing="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="54" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="Subtitle"
+                            HorizontalOptions="Center"
+                            Text="NOVEMBER"
+                            TextDecorations="Underline" />
+                        <syncfusionToolkit:SfCircularChart>
+                            <syncfusionToolkit:PieSeries
+                                EnableAnimation="True"
+                                EnableTooltip="True"
+                                IsVisibleOnLegend="True"
+                                ItemsSource="{x:StaticResource AppUsages}"
+                                PaletteBrushes="{StaticResource CustomBrushes}"
+                                Radius="1"
+                                ShowDataLabels="True"
+                                XBindingPath="Subscription"
+                                YBindingPath="UsagePercent">
 
-        <Grid>
-            <VerticalStackLayout
-                HorizontalOptions="Start"
-                Spacing="8"
-                VerticalOptions="Center">
-                <Label
-                    FontAttributes="Bold"
-                    FontSize="Title"
-                    Text="Subscription Manager"
-                    TextColor="White" />
-                <Label
-                    FontSize="Small"
-                    Text="Track spending on monthly services."
-                    TextColor="White" />
-            </VerticalStackLayout>
+                                <syncfusionToolkit:PieSeries.LabelTemplate>
+                                    <DataTemplate>
+                                        <HorizontalStackLayout>
+                                            <Label
+                                                FontSize="10"
+                                                Text="{Binding Item.Subscription}"
+                                                TextColor="Black" />
+                                            <Label
+                                                FontSize="10"
+                                                Text=" : "
+                                                TextColor="Black" />
+                                            <Label
+                                                FontSize="10"
+                                                Text="{Binding Item.Price, StringFormat='{0:C}'}"
+                                                TextColor="Black" />
+                                        </HorizontalStackLayout>
+                                    </DataTemplate>
+                                </syncfusionToolkit:PieSeries.LabelTemplate>
 
-            <Button
-                HorizontalOptions="End"
-                Text="Add"
-                VerticalOptions="Center" />
-        </Grid>
+                                <syncfusionToolkit:PieSeries.DataLabelSettings>
+                                    <syncfusionToolkit:CircularDataLabelSettings LabelPosition="Inside" SmartLabelAlignment="Shift" />
+                                </syncfusionToolkit:PieSeries.DataLabelSettings>
+                            </syncfusionToolkit:PieSeries>
+                            <syncfusionToolkit:SfCircularChart.Legend>
+                                <syncfusionToolkit:ChartLegend />
+                            </syncfusionToolkit:SfCircularChart.Legend>
+                        </syncfusionToolkit:SfCircularChart>
+                        <Label HorizontalOptions="Center">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span
+                                        FontAttributes="Bold"
+                                        Text="{Binding Source={StaticResource AppUsages}, Converter={StaticResource SumPriceConverter}, StringFormat='Total: {0:C}'}"
+                                        TextColor="Black" />
+                                    <Span Text=" - " TextColor="Black" />
+                                    <Span
+                                        Text="{Binding Source={StaticResource AppUsages}, Converter={StaticResource USDToVNDConverter}}"
+                                        TextColor="Black"
+                                        TextDecorations="Underline" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </VerticalStackLayout>
+                </Border>
+            </CollectionView.Header>
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout
+                    HorizontalItemSpacing="10"
+                    Orientation="Vertical"
+                    VerticalItemSpacing="16" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border
+                        Padding="16"
+                        BackgroundColor="#ffffff"
+                        StrokeShape="RoundRectangle 8"
+                        StrokeThickness="0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <VerticalStackLayout Spacing="4">
 
-        <Border
-            Grid.Row="1"
-            Padding="8"
-            BackgroundColor="White"
-            StrokeShape="RoundRectangle 8"
-            StrokeThickness="0">
-            <syncfusionToolkit:SfCircularChart>
+                                <Image
+                                    HeightRequest="86"
+                                    Source="{Binding Icon, Mode=OneWay}"
+                                    WidthRequest="86" />
 
-                <syncfusionToolkit:PieSeries
-                    IsVisibleOnLegend="True"
-                    ItemsSource="{x:Binding AppUsages,
-                                            Mode=OneWay}"
-                    Radius="0.65"
-                    ShowDataLabels="True"
-                    XBindingPath="AppName"
-                    YBindingPath="UsagePercent">
-
-                    <syncfusionToolkit:PieSeries.LabelTemplate>
-                        <DataTemplate x:DataType="local:AppUsage">
-                            <HorizontalStackLayout Spacing="5">
+                                <BoxView
+                                    BackgroundColor="{Binding Hex}"
+                                    CornerRadius="2"
+                                    HeightRequest="12"
+                                    WidthRequest="86" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout
+                                Grid.Column="1"
+                                Grid.ColumnSpan="2"
+                                Padding="8"
+                                Spacing="8">
                                 <Label
-                                    FontSize="13"
-                                    Text="{Binding AppName, Mode=OneWay}"
-                                    TextColor="Red" />
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    Text="{Binding Company}"
+                                    VerticalOptions="Center" />
                                 <Label
-                                    FontSize="13"
-                                    Text=" : "
-                                    TextColor="Red" />
+                                    FontSize="12"
+                                    Text="{Binding Subscription}"
+                                    VerticalOptions="Center" />
+                            </VerticalStackLayout>
+                            <Grid Grid.Column="2">
                                 <Label
-                                    FontSize="13"
-                                    Text="{x:Binding UsagePercent,
-                                                     Mode=OneWay}"
-                                    TextColor="Red" />
-                            </HorizontalStackLayout>
-                        </DataTemplate>
-                    </syncfusionToolkit:PieSeries.LabelTemplate>
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    HorizontalOptions="End"
+                                    Text="{Binding Price, StringFormat='{0:C}'}"
+                                    TextDecorations="{Binding IsDiscountApplied, Converter={StaticResource TextDecorationsConverter}}" />
 
-                    <syncfusionToolkit:PieSeries.DataLabelSettings>
-                        <syncfusionToolkit:CircularDataLabelSettings LabelPosition="Outside">
-                            <syncfusionToolkit:CircularDataLabelSettings.ConnectorLineSettings>
-                                <syncfusionToolkit:ConnectorLineStyle
-                                    ConnectorType="Curve"
-                                    Stroke="Black"
-                                    StrokeWidth="3" />
-                            </syncfusionToolkit:CircularDataLabelSettings.ConnectorLineSettings>
-                        </syncfusionToolkit:CircularDataLabelSettings>
-                    </syncfusionToolkit:PieSeries.DataLabelSettings>
-                </syncfusionToolkit:PieSeries>
+                                <Label
+                                    HorizontalOptions="End"
+                                    Text="{Binding Discount}"
+                                    VerticalOptions="Center" />
 
+                                <HorizontalStackLayout Spacing="8" VerticalOptions="End">
 
-                <syncfusionToolkit:SfCircularChart.Legend>
-                    <syncfusionToolkit:ChartLegend>
-                        <syncfusionToolkit:ChartLegend.ItemsLayout>
-                            <FlexLayout
-                                HorizontalOptions="Fill"
-                                WidthRequest="350"
-                                Wrap="Wrap" />
-                        </syncfusionToolkit:ChartLegend.ItemsLayout>
-                        <syncfusionToolkit:ChartLegend.LabelStyle>
-                            <syncfusionToolkit:ChartLegendLabelStyle
-                                Margin="5"
-                                FontSize="14"
-                                TextColor="Black" />
-                        </syncfusionToolkit:ChartLegend.LabelStyle>
-                    </syncfusionToolkit:ChartLegend>
-                </syncfusionToolkit:SfCircularChart.Legend>
+                                    <Border
+                                        Padding="4,2,4,2"
+                                        BackgroundColor="#fff7ed"
+                                        IsVisible="{Binding IsDiscountApplied}"
+                                        Stroke="#a87b4d"
+                                        StrokeShape="RoundRectangle 4">
+                                        <Label
+                                            FontSize="11"
+                                            Text="Discount applied"
+                                            TextColor="#a87b4d"
+                                            VerticalOptions="Center" />
+                                    </Border>
 
-            </syncfusionToolkit:SfCircularChart>
+                                    <Border
+                                        Padding="4,2,4,2"
+                                        BackgroundColor="#4169e1"
+                                        IsVisible="{Binding IsDiscountApplied, Converter={StaticResource InvertedBoolConverter}}"
+                                        Stroke="White"
+                                        StrokeShape="RoundRectangle 4">
+                                        <Label
+                                            FontSize="11"
+                                            Text="Discount available"
+                                            TextColor="White"
+                                            VerticalOptions="Center" />
+                                    </Border>
 
+                                    <Border
+                                        Padding="4,2,4,2"
+                                        BackgroundColor="#f0fdf4"
+                                        IsVisible="{Binding IsPaid}"
+                                        StrokeShape="RoundRectangle 4">
+                                        <Label
+                                            FontSize="11"
+                                            Text="Paid"
+                                            TextColor="#278236"
+                                            VerticalOptions="Center" />
+                                    </Border>
 
-        </Border>
+                                    <Border
+                                        Padding="4,2,4,2"
+                                        BackgroundColor="#e0e5eb"
+                                        StrokeShape="RoundRectangle 4">
+
+                                        <Label FontSize="11">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding DayLeft}" />
+                                                    <Span Text=" " />
+                                                    <Span Text="days left" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </Border>
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Grid>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal" />
+                                <VisualState Name="Selected">
+                                    <VisualState.Setters>
+                                        <!--  Transparent background removes highlight  -->
+                                        <Setter Property="BackgroundColor" Value="Transparent" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
     </Grid>
 </ContentPage>

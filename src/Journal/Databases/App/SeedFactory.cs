@@ -131,9 +131,13 @@ public class SeedFactory
 
     public async Task SeedAdmins(JournalDbContext context)
     {
-        if (context.Profiles.Any())
+        var existsInJournal = await context.Profiles
+            .AnyAsync(p => p.Id == Guid.Parse("fdfa4136-ada3-41dc-b16e-8fd9556d4574")
+                        || p.Email == "systemtester@journal.com");
+
+        if (existsInJournal)
         {
-            Console.WriteLine("✓ Exercises already seeded. Skipping...");
+            Console.WriteLine("✓ Admin profile already seeded. Skipping...");
             return;
         }
 

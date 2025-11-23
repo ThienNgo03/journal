@@ -13,11 +13,6 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 
 var env = builder.Environment;
 
-builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.Docker.json", optional: false, reloadOnChange: true)
-    .AddEnvironmentVariables();
-
 builder.Services.Configure<DbConfig>(
 	builder.Configuration.GetSection("JournalDb"));
 builder.Services.Configure<DbConfig>(
@@ -76,7 +71,7 @@ app.MapHub<Journal.SoloPools.Hub>("solo-pools-hub");
 app.MapHub<Journal.TeamPools.Hub>("team-pools-hub");
 app.MapHub<Journal.Profiles.Hub>("users-hub");
 
-await Journal.Databases.Identity.Initializer.InitDb(app);
-await Journal.Databases.App.Initializer.InitDb(app);
+//await Journal.Databases.Identity.Initializer.InitDb(app);
+//await Journal.Databases.App.Initializer.InitDb(app);
 
 app.Run();

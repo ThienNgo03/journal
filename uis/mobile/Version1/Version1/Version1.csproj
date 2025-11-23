@@ -115,6 +115,9 @@
 	  <MauiXaml Update="Features\Profile\Page.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Features\Subscriptions\Detail\Page.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Features\Subscriptions\Page.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

@@ -8,28 +8,98 @@ public partial class ViewModel(
     IAppNavigator appNavigator,
     Core.Exercises.Interface exercises ) : BaseViewModel(appNavigator)
 {
-
-    [ObservableProperty]
-    ObservableCollection<AppUsage> appUsages = new ObservableCollection<AppUsage>
-    {
-        new AppUsage { AppName = "App A", UsagePercent = 45 },
-        new AppUsage { AppName = "App B", UsagePercent = 25.0 },
-        new AppUsage { AppName = "App C", UsagePercent = 10.0 },
-        new AppUsage { AppName = "App D", UsagePercent = 10 },
-        new AppUsage { AppName = "App E", UsagePercent = 2.0 },
-        new AppUsage { AppName = "App F", UsagePercent = 2.0 },
-        new AppUsage { AppName = "App G", UsagePercent = 2.0 },
-        new AppUsage { AppName = "App H", UsagePercent = 2.0 },
-        new AppUsage { AppName = "App I", UsagePercent = 2.0 },
-    };
 }
 
 
 public partial class AppUsage : ObservableObject
 {
     [ObservableProperty]
-    string appName;
+    string company;
+
+    [ObservableProperty]
+    string icon;
+
+    [ObservableProperty]
+    string subscription;
 
     [ObservableProperty]
     double usagePercent;
+
+    [ObservableProperty]
+    decimal price;
+
+    [ObservableProperty]
+    string? discount; // "$10.99 (-15$) format
+
+    [ObservableProperty]
+    string hex;
+
+    [ObservableProperty]
+    string dayLeft;
+
+    [ObservableProperty]
+    bool isPaid;
+
+    [ObservableProperty]
+    bool isDiscountApplied;
+}
+
+public class SumPriceConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var items = value as IEnumerable<AppUsage>;
+        return items?.Sum(i => i.Price) ?? 0;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class TextDecorationsConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool isDiscountApplied && isDiscountApplied)
+        {
+            return TextDecorations.Strikethrough;
+        }
+        return TextDecorations.None;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class USDToVNDConverter : IValueConverter
+{
+    // Tỷ giá USD sang VND (có thể điều chỉnh theo tỷ giá hiện tại)
+    private const decimal ExchangeRate = 24500m;
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is decimal usdPrice)
+        {
+            decimal vndPrice = usdPrice * ExchangeRate;
+            return vndPrice.ToString("N0", new CultureInfo("vi-VN")) + " ₫";
+        }
+
+        if (value is IEnumerable<AppUsage> items)
+        {
+            decimal totalUSD = items.Sum(i => i.Price);
+            decimal totalVND = totalUSD * ExchangeRate;
+            return totalVND.ToString("N0", new CultureInfo("vi-VN")) + " ₫";
+        }
+
+        return "0 ₫";
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
 }

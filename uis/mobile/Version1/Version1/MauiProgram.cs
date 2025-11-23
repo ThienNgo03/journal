@@ -51,12 +51,12 @@ public static class MauiProgram
 
 
         var libraryConfig = new Library.Config(
-                    url: "https://0qt826wj-7011.asse.devtunnels.ms/",
+                    url: "https://nnwwttc0-7011.asse.devtunnels.ms/",
                     secretKey: "secretKey"
                 );
         builder.Services.AddEndpoints(libraryConfig);
 
-        Core.Config config = new("https://vp96jqn7-7245.asse.devtunnels.ms/");
+        Core.Config config = new("https://5zp1ktts-7245.asse.devtunnels.ms/");
         builder.Services.AddBff(config);
         return builder;
     }

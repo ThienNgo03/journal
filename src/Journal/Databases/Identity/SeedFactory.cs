@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Journal.Databases.Identity;
 
@@ -6,9 +7,13 @@ public class SeedFactory
 {
     public async Task SeedAdmins(IdentityContext context)
     {
-        if (context.Users.Any())
+        var existsInIdentity = await context.Users
+            .AnyAsync(u => u.Id == "fdfa4136-ada3-41dc-b16e-8fd9556d4574"
+                        || u.Email == "systemtester@journal.com");
+
+        if (existsInIdentity)
         {
-            Console.WriteLine("✓ Exercises already seeded. Skipping...");
+            Console.WriteLine("SystemTester already exists in Identity database. Skipping...");
             return;
         }
 

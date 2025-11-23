@@ -19,7 +19,15 @@ public partial class Page : ContentPage
     }
     #endregion
 
-    private async void ContentPage_Loaded(object sender, EventArgs e)
+    private void CollectionView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Navigate to the details page
+        var appUsage = e.CurrentSelection.FirstOrDefault() as AppUsage;
+        if (appUsage != null)
+        {
+            Navigation.PushAsync(new Version1.Features.Subscriptions.Detail.Page());
+
+        }
     }
 }
+

@@ -1,6 +1,7 @@
 ﻿
 global using Wolverine;
 global using Journal.Databases.App;
+global using Journal.Databases.Identity;
 global using System.Security.Claims;
 
 global using Microsoft.EntityFrameworkCore;
