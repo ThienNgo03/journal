@@ -22,10 +22,6 @@ public class Controller : ControllerBase
         {
             item.AppUsages.Add(new AppUsage());
         }
-        for (int i = 0; i < 5; i++) 
-        {
-            item.CustomBrush.Add(string.Empty);
-        }
 
         _mapper.All.SetMonth(item);
         _mapper.All.SetCompany(item.AppUsages);
@@ -37,7 +33,7 @@ public class Controller : ControllerBase
         _mapper.All.SetDayLeft(item.AppUsages);
         _mapper.All.SetIsPaid(item.AppUsages);
         _mapper.All.SetIsDiscountApplied(item.AppUsages);
-        _mapper.All.SetCustomBrush(item.CustomBrush);
+        _mapper.All.SetCustomBrush(item.CustomBrush, item.AppUsages);
 
         return Ok(item);
     }
