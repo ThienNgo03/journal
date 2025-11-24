@@ -1,24 +1,27 @@
-﻿using Bogus;
+﻿using Azure.Storage.Blobs.Models;
+using Bogus;
 
 namespace BFF.Subscriptions.All;
 
 public interface IMapper
 {
-    void SetMonth(Item responses);
-    void SetCompany(List<AppUsage> responses);
-    void SetIcon(List<AppUsage> responses);
-    void SetSubscription(List<AppUsage> responses);
-    void SetUsagePercent(List<AppUsage> responses);
-    void SetPrice(List<AppUsage> responses);
-    void SetDiscount(List<AppUsage> responses);
-    void SetHex(List<AppUsage> responses);
-    void SetDayLeft(List<AppUsage> responses);
-    void SetIsPaid(List<AppUsage> responses);
-    void SetIsDiscountApplied(List<AppUsage> responses);
-    void SetCustomBrush(List<string> pallete, List<AppUsage> responses);
+    void SetMonth(Item items);
+    void SetCompany(List<AppUsage> items);
+    void SetIcon(List<AppUsage> items);
+    void SetSubscription(List<AppUsage> items);
+    void SetUsagePercent(List<AppUsage> items);
+    void SetPrice(List<AppUsage> items);
+    void SetDiscount(List<AppUsage> items);
+    void SetHex(List<AppUsage> items);
+    void SetDayLeft(List<AppUsage> items);
+    void SetIsPaid(List<AppUsage> items);
+    void SetIsDiscountApplied(List<AppUsage> items);
+    void SetIsDiscountAvailable(List<AppUsage> items);
+    void SetCustomBrush(List<string> pallete, List<AppUsage> items);
+    void SetDiscountedPrice(List<AppUsage> items);
 
 }
-public class Mapper:IMapper
+public class Mapper: IMapper
 {
     private readonly Faker faker;
     public Mapper()
@@ -26,104 +29,157 @@ public class Mapper:IMapper
         faker = new Faker();
     }
 
-    public void SetMonth(Item responses)
+    public void SetMonth(Item items)
     {
         var today = DateTime.Today;
-        responses.Month = today.ToString("MMMM");
+        items.Month = today.ToString("MMMM");
     }
 
-    public void SetCompany(List<AppUsage> responses)
+    public void SetCompany(List<AppUsage> items)
     {
         //set company using faker
-        foreach (var response in responses)
+        foreach (var item in items)
         {
-            response.Company = faker.Company.CompanyName();
+            item.Company = faker.Company.CompanyName();
         }
     }
 
-    public void SetDayLeft(List<AppUsage> responses)
+    public void SetDayLeft(List<AppUsage> items)
     {
         //set day left using faker
         int dayleft;
-        foreach (var response in responses)
+        foreach (var item in items)
         {
             dayleft= faker.Random.Number(1, 31);
-            response.DayLeft = $"{dayleft} day(s) left";
+            item.DayLeft = $"{dayleft} day(s) left";
         }
     }
 
-    public void SetDiscount(List<AppUsage> responses)
+    public void SetDiscount(List<AppUsage> items)
     {
-        throw new NotImplementedException();
+        foreach (var item in items)
+        {
+            var usePercentage = faker.Random.Bool();
+            decimal discountValue;
+            decimal finalPrice;
+
+            if (usePercentage)
+            {
+                var percent = faker.Random.Decimal(0, 100);
+                discountValue = item.Price * percent / 100;
+            }
+            else
+            {
+                discountValue = faker.Random.Decimal(0, item.Price);
+            }
+
+            // format "$10.99 (-15$)"
+            finalPrice = item.Price - discountValue;
+            item.Discount = $"${finalPrice:F2} (-{discountValue:F2}$)";
+        }
     }
 
-    public void SetHex(List<AppUsage> responses)
+    public void SetDiscountedPrice(List<AppUsage> items)
+    {
+        foreach (var item in items)
+        {
+            var usePercentage = faker.Random.Bool();
+            decimal discountValue;
+            decimal finalPrice;
+
+            if (usePercentage)
+            {
+                var percent = faker.Random.Decimal(0, 100);
+                discountValue = item.Price * percent / 100;
+            }
+            else
+            {
+                discountValue = faker.Random.Decimal(0, item.Price);
+            }
+
+            // format "$10.99 (-15$)"
+            finalPrice = item.Price - discountValue;
+            item.DiscountedPrice = discountValue;
+        }
+    }
+
+
+    public void SetHex(List<AppUsage> items)
     {
         //set hex color using faker
-        foreach (var response in responses)
+        foreach (var item in items)
         {
-            response.Hex = faker.Internet.Color();
+            item.Hex = faker.Internet.Color();
         }
     }
 
-    public void SetIcon(List<AppUsage> responses)
+    public void SetIcon(List<AppUsage> items)
     {
         //set icon using faker and https://picsum.photos
-        foreach (var response in responses)
+        foreach (var item in items)
         {
             var imgId = faker.Random.Number(1, 1000);
-            response.Icon = $"https://picsum.photos/id/{imgId}/200/200";
+            item.Icon = $"https://picsum.photos/id/{imgId}/200/200";
         }
     }
 
-    public void SetIsDiscountApplied(List<AppUsage> responses)
+    public void SetIsDiscountApplied(List<AppUsage> items)
     {
         //set is discount applied randomly
-        foreach (var response in responses)
+        foreach (var item in items)
         {
-            response.IsDiscountApplied = faker.Random.Bool();
+            item.IsDiscountApplied = faker.Random.Bool();
         }
     }
 
-    public void SetIsPaid(List<AppUsage> responses)
+    public void SetIsPaid(List<AppUsage> items)
     {
         //set is paid randomly
-        foreach (var response in responses)
+        foreach (var item in items)
         {
-            response.IsPaid = faker.Random.Bool();
+            item.IsPaid = faker.Random.Bool();
         }
     }
 
-    public void SetPrice(List<AppUsage> responses)
+    public void SetPrice(List<AppUsage> items)
     {
         //set price using faker
-        foreach (var response in responses)
+        foreach (var item in items)
         {
-            response.Price = faker.Finance.Amount(5, 100);
+            item.Price = faker.Finance.Amount(5, 100);
         }
     }
 
-    public void SetSubscription(List<AppUsage> responses)
+    public void SetSubscription(List<AppUsage> items)
     {
         //set subscription using faker
-        foreach (var response in responses)
+        foreach (var item in items)
         {
-            response.Subscription = faker.Commerce.ProductName();
+            item.Subscription = faker.Commerce.ProductName();
         }
     }
 
-    public void SetUsagePercent(List<AppUsage> responses)
+    public void SetUsagePercent(List<AppUsage> items)
     {
         //set usage percent using faker
-        foreach (var response in responses)
+        foreach (var item in items)
         {
-            response.UsagePercent = faker.Random.Double(0, 100);
+            item.UsagePercent = faker.Random.Double(0, 100);
         }
     }
 
-    public void SetCustomBrush(List<string> pallete, List<AppUsage> responses)
+    public void SetCustomBrush(List<string> pallete, List<AppUsage> items)
     {
         //set custom brush using faker
-        pallete.AddRange(responses.Select(r => r.Hex).ToList());
+        pallete.AddRange(items.Select(r => r.Hex).ToList());
     }
+
+    public void SetIsDiscountAvailable(List<AppUsage> items)
+    {
+        foreach (var item in items)
+        {
+            item.IsDiscountAvailable = item.Discount != null && !item.IsDiscountApplied;
+        }
+    }
+
 }

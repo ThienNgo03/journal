@@ -13,9 +13,11 @@ public class AppUsage
     public string Subscription { get; set; } = string.Empty;
     public double UsagePercent { get; set; }
     public decimal Price { get; set; }
-    public string? Discount { get; set; } 
+    public string? Discount { get; set; }
+    public decimal? DiscountedPrice { get; set; }
     public string Hex { get; set; } = string.Empty;
     public string DayLeft { get; set; } = string.Empty;
     public bool IsPaid { get; set; }
     public bool IsDiscountApplied { get; set; }
+    public bool IsDiscountAvailable { get; set; }
 }
