@@ -15,7 +15,7 @@ public interface IMapper
     void SetDayLeft(List<AppUsage> responses);
     void SetIsPaid(List<AppUsage> responses);
     void SetIsDiscountApplied(List<AppUsage> responses);
-    void SetCustomBrush(List<string> responses);
+    void SetCustomBrush(List<string> pallete, List<AppUsage> responses);
 
 }
 public class Mapper:IMapper
@@ -121,12 +121,9 @@ public class Mapper:IMapper
         }
     }
 
-    public void SetCustomBrush(List<string> responses)
+    public void SetCustomBrush(List<string> pallete, List<AppUsage> responses)
     {
         //set custom brush using faker
-        for (int i = 0; i < responses.Count; i++)
-        {
-            responses[i] = faker.Internet.Color();
-        }
+        pallete.AddRange(responses.Select(r => r.Hex).ToList());
     }
 }
