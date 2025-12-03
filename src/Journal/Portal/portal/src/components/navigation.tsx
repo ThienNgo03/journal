@@ -37,6 +37,14 @@ const items = [
             { title: "MongoDB", isPrimary: false, metadata: "2000 keys" },
         ]
     },
+    {
+        title: "Workout",
+        url: "/workout",
+        databases: [
+            { title: "MySQL", isPrimary: true, metadata: "100 rows" },
+            { title: "MongoDB", isPrimary: false, metadata: "100 keys" },
+        ]
+    }
 ]
 
 const dbIcons: Record<string, React.ReactNode> = {
@@ -45,6 +53,7 @@ const dbIcons: Record<string, React.ReactNode> = {
     redis: <Lineicons icon={RadisOutlined} className="w-4 h-4 text-red-500 stroke-1" />,
     mysql: <Lineicons icon={MysqlOutlined} className="w-4 h-4 text-black-500 stroke-1" />,
     fallback: <Lineicons icon={Database2Outlined} className="w-4 h-4 text-gray-500 stroke-1" />,
+    
 };
 
 export function AppNavigation() {
