@@ -10,7 +10,6 @@ import { format } from 'date-fns';
 import { GridToolbar } from './grid/grid-toolbar';
 import { GridPagination } from './grid/grid-pagination';
 import { useUpdateUrlParams } from '@/lib/updateUrlParams';
-import type { IMuscle } from '@/interfaces/models/muscle';
 import { useListWorkout } from '../../_hooks/use-list-workout';
 import type { IWorkout } from '@/interfaces/models/workout';
 
