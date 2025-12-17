@@ -42,6 +42,7 @@ public class Mapper: IMapper
         {
             item.Company = faker.Company.CompanyName();
         }
+
     }
 
     public void SetDayLeft(List<AppUsage> items)
@@ -178,7 +179,7 @@ public class Mapper: IMapper
     {
         foreach (var item in items)
         {
-            item.IsDiscountAvailable = item.Discount != null && !item.IsDiscountApplied;
+            item.IsDiscountAvailable = item.Discount != null & !item.IsDiscountApplied;
         }
     }
 

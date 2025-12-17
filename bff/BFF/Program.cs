@@ -1,5 +1,4 @@
 using BFF.Authentication;
-using BFF.Chat;
 using BFF.Databases;
 using BFF.Exercises;
 using BFF.Exercises.Configurations;
@@ -7,14 +6,13 @@ using BFF.Subscriptions;
 using BFF.Users;
 using BFF.Wolverine;
 using Library;
+using Provider;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 builder.Services.AddExercises();
 builder.Services.AddExerciseConfigurations();
 builder.Services.AddSubcriptions();
@@ -31,13 +29,14 @@ var libraryConfig = new Library.Config(
 );
 builder.Services.AddEndpoints(libraryConfig);
 
+var providerConfig = new Provider.Config(
+    url: builder.Configuration["ProviderConfig:Url"] ?? "https://localhost:7063",
+    secretKey: builder.Configuration["ProviderConfig:SecretKey"] ?? "secretKey"
+);
+builder.Services.AddProviders(providerConfig);
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 app.MapHub<BFF.Chat.Hub>("messages-hub");
 app.MapHub<BFF.WorkoutLogTracking.Hub>("workout-log-tracking-hub");
 app.MapHub<BFF.Users.Hub>("users-hub");
