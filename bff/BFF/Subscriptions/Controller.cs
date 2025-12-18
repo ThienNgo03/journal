@@ -3,6 +3,7 @@ using BFF.Subscriptions.All;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Azure;
+using Newtonsoft.Json;
 using Spectre.Console.Rendering;
 
 namespace BFF.Subscriptions;
@@ -42,12 +43,14 @@ public class Controller : ControllerBase
         var providers = providersResponse.Content?.Items;
         var packagesResponse = await _packages.GetAsync(new());
         var packages = packagesResponse.Content?.Items;
-        var subscriptionByUserIdResponse = await _subscriptionByUserIds.GetAsync(new() { UserId = userId});
-        var subscriptionByUserIds = subscriptionByUserIdResponse.Content;
+        var subscriptionByUserIdsResponse = await _subscriptionByUserIds.GetAsync(new() { UserId = userId});
+        var subscriptionByUserIds = subscriptionByUserIdsResponse.Content;
         var monthTotalPrice = subscriptions.Where(sub => sub.PurchasedDate.Month == DateTime.UtcNow.Month).Select(sub => sub.Price).Sum() + subscriptionByUserIds.Where(sub => sub.PurchasedDate.Month == DateTime.UtcNow.Month).Select(sub => sub.Price).Sum();
         Item item = new Item{};
         item.AppUsages = subscriptions.Select(sub => new AppUsage()
         {
+            Id = sub.Id.ToString(),
+            UserId = sub.UserId.ToString(),
             Company = providers.FirstOrDefault(pr => pr.Id == packages.FirstOrDefault(pa => pa.Id == sub.PackageId).ProviderId).Name,
             Icon = providers.FirstOrDefault(pr => pr.Id == packages.FirstOrDefault(pa => pa.Id == sub.PackageId).ProviderId).IconUrl,
             Subscription = packages.FirstOrDefault(pa => pa.Id == sub.PackageId).Name,
@@ -69,6 +72,8 @@ public class Controller : ControllerBase
         Item tempItem = new Item();
         tempItem.AppUsages = subscriptionByUserIds.Select(sub => new AppUsage()
         {
+            Id = sub.Id.ToString(),
+            UserId = sub.UserId.ToString(),
             Company = sub.CompanyName,
             Icon = "dotnet_bot.png",
             Subscription = sub.SubscriptionPlan,
@@ -123,15 +128,13 @@ public class Controller : ControllerBase
     }
 
     [HttpPost("create")]
-    public async Task<IActionResult> Create(Create.Payload payload)
+    public async Task<IActionResult> Create([FromBody] Create.Payload payload)
     {
-        var providersResponse = await _providers.GetAsync(new());
-        var companies = providersResponse.Content?.Items;
-        var companyNames = companies.Select(pr => pr.Name.ToLower().Replace(" ", "")).ToList();
-        var packagesResponse = await _packages.GetAsync(new());
-        var subscriptions = packagesResponse.Content?.Items;
-        var subscriptionNames = subscriptions.Select(pa => pa.Name.ToLower().Replace(" ", "")).ToList();
-        bool isTempSubscription = !companyNames.Contains(payload.Company.ToLower().Replace(" ", "")) || !subscriptionNames.Contains(payload.Subscription.ToLower().Replace(" ", ""));
+        var providersResponse = await _providers.GetAsync(new() { Name = payload.Company });
+        Guid? providerId = providersResponse.Content.Items.FirstOrDefault()?.Id;
+        var packagesResponse = await _packages.GetAsync(new() { Name = payload.Subscription, ProviderId = providerId });
+        Guid? packageId = packagesResponse.Content.Items.FirstOrDefault()?.Id;
+        bool isTempSubscription = !providerId.HasValue || !packageId.HasValue;
 
         if (isTempSubscription)
         {
@@ -149,12 +152,10 @@ public class Controller : ControllerBase
             });
             return Created("", "temp-subscription-created");
         }
-        var providerId = companies.FirstOrDefault(pro => pro.Name.ToLower().Replace(" ", "") == payload.Company.ToLower().Replace(" ", "")).Id;
-        var packageId = subscriptions.FirstOrDefault(sub => sub.Name == payload.Subscription && sub.ProviderId == providerId).Id;
         await _subscriptions.PostAsync(new()
         {
             UserId = Guid.Parse(payload.UserId),
-            PackageId = packageId,
+            PackageId = packageId.Value,
             Price = payload.Price,
             Currency = payload.Currency,
             ChartColor = payload.Hex,
@@ -163,5 +164,33 @@ public class Controller : ControllerBase
             IsRecursive = payload.IsRecursive,
         });
         return Created("", "subscription-created");
+    }
+
+    [HttpDelete("delete")]
+
+    public async Task<IActionResult> Delete([FromQuery] Delete.Parameters parameters)
+    {
+        Guid? userId = Guid.TryParse(parameters.UserId, out Guid uId) ? uId : null;
+        Guid? subscriptionId = Guid.TryParse(parameters.Id, out Guid id) ? id : null;
+        var providersResponse = await _providers.GetAsync(new() { Name = parameters.CompanyName});
+        Guid? providerId = providersResponse.Content.Items.FirstOrDefault()?.Id;
+        var packagesResponse = await _packages.GetAsync(new() { Name = parameters.SubscriptionPlan, ProviderId = providerId });
+        Guid? packageId = packagesResponse.Content.Items.FirstOrDefault()?.Id;
+
+        if (providerId.HasValue && packageId.HasValue)
+        {
+            if (!subscriptionId.HasValue)
+            {
+                Console.WriteLine("Null Subscription Id.");
+                return NoContent();
+            }
+            await _subscriptions.DeleteAsync(new()
+            {
+                Id = subscriptionId.Value,
+            });
+            return NoContent();
+        }
+        await _subscriptionByUserIds.DeleteAsync(new() { UserId = userId.Value, SubscriptionPlan = parameters.SubscriptionPlan, CompanyName = parameters.CompanyName });
+        return NoContent();
     }
 }

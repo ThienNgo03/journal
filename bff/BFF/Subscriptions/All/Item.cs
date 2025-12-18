@@ -8,6 +8,8 @@ public class Item
 }
 public class AppUsage
 {
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string Company { get; set; }= string.Empty;
     public string Icon { get; set; }= string.Empty;
     public string Subscription { get; set; } = string.Empty;
