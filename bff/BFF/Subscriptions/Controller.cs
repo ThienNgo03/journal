@@ -133,7 +133,7 @@ public class Controller : ControllerBase
         var providersResponse = await _providers.GetAsync(new() { Name = payload.Company });
         Guid? providerId = providersResponse.Content.Items.FirstOrDefault()?.Id;
         var packagesResponse = await _packages.GetAsync(new() { Name = payload.Subscription, ProviderId = providerId });
-        Guid? packageId = packagesResponse.Content.Items.FirstOrDefault()?.Id;
+        Guid? packageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == payload.Subscription && x.ProviderId == providerId)?.Id;
         bool isTempSubscription = !providerId.HasValue || !packageId.HasValue;
 
         if (isTempSubscription)
@@ -166,8 +166,101 @@ public class Controller : ControllerBase
         return Created("", "subscription-created");
     }
 
-    [HttpDelete("delete")]
+    [HttpPut("Update")]
+    public async Task<IActionResult> Update([FromBody] Put.Payload payload)
+    {
+        Guid? userId = Guid.TryParse(payload.UserId, out Guid uId) ? uId : null;
+        Guid? subscriptionId = Guid.TryParse(payload.Id, out Guid id) ? id : null;
 
+        var providersResponse = await _providers.GetAsync(new() { Name = payload.OldCompany });
+        Guid? oldProviderId = providersResponse.Content.Items.FirstOrDefault()?.Id;
+        var packagesResponse = await _packages.GetAsync(new() { Name = payload.OldSubscription, ProviderId = oldProviderId });
+        Guid? oldPackageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == payload.OldSubscription && x.ProviderId == oldProviderId)?.Id;
+
+        providersResponse = await _providers.GetAsync(new() { Name = payload.NewCompany });
+        Guid? newProviderId = providersResponse.Content.Items.FirstOrDefault()?.Id;
+        packagesResponse = await _packages.GetAsync(new() { Name = payload.NewSubscription, ProviderId = newProviderId });
+        Guid? newPackageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == payload.NewSubscription && x.ProviderId == newProviderId)?.Id;
+
+        if (oldPackageId != null && newPackageId != null)
+        {
+            await _subscriptions.PutAsync(new()
+            {
+                Id = subscriptionId.Value,
+                UserId = userId.Value,
+                PackageId = newPackageId.Value,
+                Price = payload.Price,
+                Currency = payload.Currency,
+                ChartColor = payload.Hex,
+                PurchasedDate = payload.PurchasedDate,
+                RenewalDate = payload.RenewalDate,
+                IsRecursive = payload.IsRecursive,
+            });
+            return NoContent();
+        }
+        if (oldPackageId == null && newPackageId == null)
+        {
+            await _subscriptionByUserIds.PutAsync(new()
+            {
+                Id = subscriptionId.Value,
+                OldUserId = userId.Value,
+                OldSubscriptionPlan = payload.OldSubscription,
+                OldCompanyName = payload.OldCompany,
+                NewUserId = userId.Value,
+                NewSubscriptionPlan = payload.NewSubscription,
+                NewCompanyName = payload.NewCompany,
+                Price = payload.Price,
+                Currency = payload.Currency,
+                ChartColor = payload.Hex,
+                PurchasedDate = payload.PurchasedDate,
+                RenewalDate = payload.RenewalDate,
+                IsRecursive = payload.IsRecursive
+            });
+            return NoContent();
+        }
+        
+        if (oldPackageId != null && newPackageId == null)
+        {
+            await _subscriptions.DeleteAsync(new() { Id = subscriptionId.Value });
+            await _subscriptionByUserIds.PostAsync(new()
+            {
+                UserId = userId.Value,
+                SubscriptionPlan = payload.NewSubscription,
+                CompanyName = payload.NewCompany,
+                Price = payload.Price,
+                Currency = payload.Currency,
+                ChartColor = payload.Hex,
+                PurchasedDate = payload.PurchasedDate,
+                RenewalDate = payload.RenewalDate,
+                IsRecursive = payload.IsRecursive
+            });
+            return NoContent();
+        }
+        if (oldPackageId == null && newPackageId != null)
+        {
+            await _subscriptionByUserIds.DeleteAsync(new()
+            {
+                UserId = userId.Value,
+                SubscriptionPlan = payload.OldSubscription,
+                CompanyName= payload.OldCompany
+            });
+            await _subscriptions.PostAsync(new()
+            {
+                UserId = userId.Value,
+                PackageId = newPackageId.Value,
+                Price = payload.Price,
+                Currency = payload.Currency,
+                ChartColor = payload.Hex,
+                PurchasedDate = payload.PurchasedDate,
+                RenewalDate = payload.RenewalDate,
+                IsRecursive = payload.IsRecursive
+            });
+            return NoContent();
+        }
+        return NoContent();
+    }
+
+    [HttpDelete("delete")]
     public async Task<IActionResult> Delete([FromQuery] Delete.Parameters parameters)
     {
         Guid? userId = Guid.TryParse(parameters.UserId, out Guid uId) ? uId : null;
@@ -175,7 +268,7 @@ public class Controller : ControllerBase
         var providersResponse = await _providers.GetAsync(new() { Name = parameters.CompanyName});
         Guid? providerId = providersResponse.Content.Items.FirstOrDefault()?.Id;
         var packagesResponse = await _packages.GetAsync(new() { Name = parameters.SubscriptionPlan, ProviderId = providerId });
-        Guid? packageId = packagesResponse.Content.Items.FirstOrDefault()?.Id;
+        Guid? packageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == parameters.SubscriptionPlan && x.ProviderId == providerId)?.Id;
 
         if (providerId.HasValue && packageId.HasValue)
         {
