@@ -12,6 +12,8 @@ public class Payload
     public string Hex { get; set; } = string.Empty;
     public DateTime PurchasedDate { get; set; }
     public DateTime RenewalDate { get; set; }
+    public int TimesInMonth { get; set; } = 1;
+    public bool UseCalendarMonthCycle { get; set; }
     public bool IsRecursive { get; set; }
     public bool? IsDiscountApplied { get; set; }
     public bool? IsDiscountAvailable { get; set; }

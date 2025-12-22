@@ -39,13 +39,141 @@ public class Controller : ControllerBase
         Guid? userId = Guid.TryParse(parameters.UserId, out Guid uId) ? uId : null;
         var subscriptionsResponse = await _subscriptions.GetAsync(new() { UserId = userId});
         var subscriptions = subscriptionsResponse.Content?.Items;
+        var obsoleteSubscriptions = subscriptions.Where(sub => sub.RenewalDate <= DateTime.UtcNow).ToList();
+        var hasObsoleteSubscriptions = obsoleteSubscriptions.Any();
+        if (hasObsoleteSubscriptions)
+        {
+            foreach(var obsoleteSubscription in obsoleteSubscriptions)
+            {
+                if (obsoleteSubscription.IsRecursive == false)
+                {
+                    await _subscriptions.DeleteAsync(new() { Id = obsoleteSubscription.Id });
+                }
+                if (obsoleteSubscription.IsRecursive == true)
+                {
+                    DateTime oldPurchasedDate;
+                    DateTime newRenewalDate = obsoleteSubscription.RenewalDate;
+                    DateTime newPurchasedDate = obsoleteSubscription.PurchasedDate;
+                    int newTimesInMonth = obsoleteSubscription.TimesInMonth;
+                    do
+                    {
+                        oldPurchasedDate = newPurchasedDate;
+                        newPurchasedDate = newRenewalDate;
+                        if (obsoleteSubscription.UseCalendarMonthCycle)
+                        {
+                            newRenewalDate = new DateTime(newPurchasedDate.AddMonths(1).Year,
+                                                                 newPurchasedDate.AddMonths(1).Month,
+                                                                 Math.Min(newPurchasedDate.Day, DateTime.DaysInMonth(newPurchasedDate.AddMonths(1).Year,
+                                                                                                                                     newPurchasedDate.AddMonths(1).Month)));
+                        }
+                        else
+                        {
+                            newRenewalDate = newPurchasedDate.AddDays((newPurchasedDate - oldPurchasedDate).Days);
+                        }
+                        if (oldPurchasedDate.Month == newPurchasedDate.Month)
+                        {
+                            newTimesInMonth += 1;
+                        }
+                        else
+                        {
+                            newTimesInMonth = 1;
+                        }
+                    } while (newRenewalDate <= DateTime.UtcNow);
+                    await _subscriptions.PutAsync(new()
+                    {
+                        Id = obsoleteSubscription.Id,
+                        UserId = obsoleteSubscription.UserId,
+                        PackageId = obsoleteSubscription.PackageId,
+                        Price = obsoleteSubscription.Price,
+                        Currency = obsoleteSubscription.Currency,
+                        ChartColor = obsoleteSubscription.ChartColor,
+                        PurchasedDate = newPurchasedDate,
+                        RenewalDate = newRenewalDate,
+                        IsRecursive = obsoleteSubscription.IsRecursive,
+                        TimesInMonth = obsoleteSubscription.TimesInMonth,
+                        UseCalendarMonthCycle = obsoleteSubscription.UseCalendarMonthCycle
+                    });
+                }
+            }
+        }
         var providersResponse = await _providers.GetAsync(new());
         var providers = providersResponse.Content?.Items;
         var packagesResponse = await _packages.GetAsync(new());
         var packages = packagesResponse.Content?.Items;
         var subscriptionByUserIdsResponse = await _subscriptionByUserIds.GetAsync(new() { UserId = userId});
         var subscriptionByUserIds = subscriptionByUserIdsResponse.Content;
-        var monthTotalPrice = subscriptions.Where(sub => sub.PurchasedDate.Month == DateTime.UtcNow.Month).Select(sub => sub.Price).Sum() + subscriptionByUserIds.Where(sub => sub.PurchasedDate.Month == DateTime.UtcNow.Month).Select(sub => sub.Price).Sum();
+        var obstoleSubscriptionByUserIds = subscriptionByUserIds.Where(sub => sub.RenewalDate <= DateTime.UtcNow).ToList();
+        var hasObstoleSubscriptionByUserIds = obstoleSubscriptionByUserIds.Any();
+        if (hasObstoleSubscriptionByUserIds)
+        {
+            foreach (var obsoleteSubscription in obstoleSubscriptionByUserIds)
+            {
+                if (obsoleteSubscription.IsRecursive == false)
+                {
+                    await _subscriptionByUserIds.DeleteAsync(new() { UserId = obsoleteSubscription.UserId, SubscriptionPlan = obsoleteSubscription.SubscriptionPlan, CompanyName = obsoleteSubscription.CompanyName });
+                }
+                if (obsoleteSubscription.IsRecursive == true)
+                {
+                    DateTime oldPurchasedDate;
+                    DateTime newRenewalDate = obsoleteSubscription.RenewalDate;
+                    DateTime newPurchasedDate = obsoleteSubscription.PurchasedDate;
+                    int newTimesInMonth = obsoleteSubscription.TimesInMonth;
+                    do
+                    {
+                        oldPurchasedDate = newPurchasedDate;
+                        newPurchasedDate = newRenewalDate;
+                        if (obsoleteSubscription.UseCalendarMonthCycle)
+                        {
+                            newRenewalDate = new DateTime(newPurchasedDate.AddMonths(1).Year,
+                                                                 newPurchasedDate.AddMonths(1).Month,
+                                                                 Math.Min(newPurchasedDate.Day, DateTime.DaysInMonth(newPurchasedDate.AddMonths(1).Year,
+                                                                                                                                     newPurchasedDate.AddMonths(1).Month)));
+                        }
+                        else
+                        {
+                            newRenewalDate = newPurchasedDate.AddDays((newPurchasedDate - oldPurchasedDate).Days);
+                        }
+                        if (oldPurchasedDate.Month == newPurchasedDate.Month)
+                        {
+                            newTimesInMonth += 1;
+                        }
+                        else
+                        {
+                            newTimesInMonth = 1;
+                        }
+                    } while (newRenewalDate <= DateTime.UtcNow);
+                    await _subscriptionByUserIds.PutAsync(new()
+                    {
+                        Id = obsoleteSubscription.Id,
+                        OldUserId = obsoleteSubscription.UserId,
+                        OldSubscriptionPlan = obsoleteSubscription.SubscriptionPlan,
+                        OldCompanyName = obsoleteSubscription.CompanyName,
+                        NewUserId = obsoleteSubscription.UserId,
+                        NewSubscriptionPlan = obsoleteSubscription.SubscriptionPlan,
+                        NewCompanyName = obsoleteSubscription.CompanyName,
+                        Price = obsoleteSubscription.Price,
+                        Currency = obsoleteSubscription.Currency,
+                        ChartColor = obsoleteSubscription.ChartColor,
+                        PurchasedDate = newPurchasedDate,
+                        RenewalDate = newRenewalDate,
+                        IsRecursive = obsoleteSubscription.IsRecursive,
+                        TimesInMonth = newTimesInMonth,
+                        UseCalendarMonthCycle = obsoleteSubscription.UseCalendarMonthCycle
+                    });
+                }
+            }
+        }
+        if (hasObsoleteSubscriptions)
+        {
+            subscriptionsResponse = await _subscriptions.GetAsync(new() { UserId = userId });
+            subscriptions = subscriptionsResponse.Content?.Items;
+        }
+        if (hasObstoleSubscriptionByUserIds)
+        {
+            subscriptionByUserIdsResponse = await _subscriptionByUserIds.GetAsync(new() { UserId = userId });
+            subscriptionByUserIds = subscriptionByUserIdsResponse.Content;
+        }
+        var monthTotalPrice = subscriptions.Where(sub => sub.PurchasedDate.Month == DateTime.UtcNow.Month).Select(sub => sub.Price * sub.TimesInMonth).Sum() + subscriptionByUserIds.Where(sub => sub.PurchasedDate.Month == DateTime.UtcNow.Month).Select(sub => sub.Price * sub.TimesInMonth).Sum();
         Item item = new Item{};
         item.AppUsages = subscriptions.Select(sub => new AppUsage()
         {
@@ -55,7 +183,7 @@ public class Controller : ControllerBase
             Icon = providers.FirstOrDefault(pr => pr.Id == packages.FirstOrDefault(pa => pa.Id == sub.PackageId).ProviderId).IconUrl,
             Subscription = packages.FirstOrDefault(pa => pa.Id == sub.PackageId).Name,
             UsagePercent = (sub.PurchasedDate.Month == DateTime.UtcNow.Month) ? 
-                               (double)((sub.Price / monthTotalPrice)*100) :
+                               (double)((sub.Price * sub.TimesInMonth / monthTotalPrice)*100) :
                                0,
             Price = sub.Price,
             Currency = sub.Currency,
@@ -78,7 +206,7 @@ public class Controller : ControllerBase
             Icon = "dotnet_bot.png",
             Subscription = sub.SubscriptionPlan,
             UsagePercent = (sub.PurchasedDate.Month == DateTime.UtcNow.Month) ?
-                               (double)((sub.Price / monthTotalPrice) * 100) :
+                               (double)((sub.Price * sub.TimesInMonth / monthTotalPrice) * 100) :
                                0,
             Price = sub.Price,
             Currency = sub.Currency,
@@ -149,6 +277,8 @@ public class Controller : ControllerBase
                 PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
                 IsRecursive = payload.IsRecursive,
+                TimesInMonth = payload.TimesInMonth,
+                UseCalendarMonthCycle = payload.UseCalendarMonthCycle,
             });
             return Created("", "temp-subscription-created");
         }
@@ -162,6 +292,8 @@ public class Controller : ControllerBase
             PurchasedDate = payload.PurchasedDate,
             RenewalDate = payload.RenewalDate,
             IsRecursive = payload.IsRecursive,
+            TimesInMonth = payload.TimesInMonth,
+            UseCalendarMonthCycle = payload.UseCalendarMonthCycle,
         });
         return Created("", "subscription-created");
     }
@@ -195,6 +327,8 @@ public class Controller : ControllerBase
                 PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
                 IsRecursive = payload.IsRecursive,
+                TimesInMonth = payload.TimesInMonth,
+                UseCalendarMonthCycle = payload.UseCalendarMonthCycle
             });
             return NoContent();
         }
@@ -214,7 +348,9 @@ public class Controller : ControllerBase
                 ChartColor = payload.Hex,
                 PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
-                IsRecursive = payload.IsRecursive
+                IsRecursive = payload.IsRecursive,
+                TimesInMonth = payload.TimesInMonth,
+                UseCalendarMonthCycle = payload.UseCalendarMonthCycle
             });
             return NoContent();
         }
@@ -232,7 +368,9 @@ public class Controller : ControllerBase
                 ChartColor = payload.Hex,
                 PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
-                IsRecursive = payload.IsRecursive
+                IsRecursive = payload.IsRecursive,
+                TimesInMonth = payload.TimesInMonth,
+                UseCalendarMonthCycle = payload.UseCalendarMonthCycle,
             });
             return NoContent();
         }
@@ -253,7 +391,9 @@ public class Controller : ControllerBase
                 ChartColor = payload.Hex,
                 PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
-                IsRecursive = payload.IsRecursive
+                IsRecursive = payload.IsRecursive,
+                TimesInMonth = payload.TimesInMonth,
+                UseCalendarMonthCycle = payload.UseCalendarMonthCycle,
             });
             return NoContent();
         }
