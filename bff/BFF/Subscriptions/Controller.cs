@@ -51,33 +51,13 @@ public class Controller : ControllerBase
                 }
                 if (obsoleteSubscription.IsRecursive == true)
                 {
-                    DateTime oldPurchasedDate;
                     DateTime newRenewalDate = obsoleteSubscription.RenewalDate;
-                    DateTime newPurchasedDate = obsoleteSubscription.PurchasedDate;
-                    int newTimesInMonth = obsoleteSubscription.TimesInMonth;
                     do
                     {
-                        oldPurchasedDate = newPurchasedDate;
-                        newPurchasedDate = newRenewalDate;
-                        if (obsoleteSubscription.UseCalendarMonthCycle)
-                        {
-                            newRenewalDate = new DateTime(newPurchasedDate.AddMonths(1).Year,
-                                                                 newPurchasedDate.AddMonths(1).Month,
-                                                                 Math.Min(newPurchasedDate.Day, DateTime.DaysInMonth(newPurchasedDate.AddMonths(1).Year,
-                                                                                                                                     newPurchasedDate.AddMonths(1).Month)));
-                        }
-                        else
-                        {
-                            newRenewalDate = newPurchasedDate.AddDays((newPurchasedDate - oldPurchasedDate).Days);
-                        }
-                        if (oldPurchasedDate.Month == newPurchasedDate.Month)
-                        {
-                            newTimesInMonth += 1;
-                        }
-                        else
-                        {
-                            newTimesInMonth = 1;
-                        }
+                        newRenewalDate = new DateTime(newRenewalDate.AddMonths(1).Year,
+                                                                newRenewalDate.AddMonths(1).Month,
+                                                                Math.Min(newRenewalDate.Day, DateTime.DaysInMonth(newRenewalDate.AddMonths(1).Year,
+                                                                                                                                    newRenewalDate.AddMonths(1).Month)));
                     } while (newRenewalDate <= DateTime.UtcNow);
                     await _subscriptions.PutAsync(new()
                     {
@@ -87,11 +67,8 @@ public class Controller : ControllerBase
                         Price = obsoleteSubscription.Price,
                         Currency = obsoleteSubscription.Currency,
                         ChartColor = obsoleteSubscription.ChartColor,
-                        PurchasedDate = newPurchasedDate,
                         RenewalDate = newRenewalDate,
                         IsRecursive = obsoleteSubscription.IsRecursive,
-                        TimesInMonth = obsoleteSubscription.TimesInMonth,
-                        UseCalendarMonthCycle = obsoleteSubscription.UseCalendarMonthCycle
                     });
                 }
             }
@@ -114,33 +91,13 @@ public class Controller : ControllerBase
                 }
                 if (obsoleteSubscription.IsRecursive == true)
                 {
-                    DateTime oldPurchasedDate;
                     DateTime newRenewalDate = obsoleteSubscription.RenewalDate;
-                    DateTime newPurchasedDate = obsoleteSubscription.PurchasedDate;
-                    int newTimesInMonth = obsoleteSubscription.TimesInMonth;
                     do
                     {
-                        oldPurchasedDate = newPurchasedDate;
-                        newPurchasedDate = newRenewalDate;
-                        if (obsoleteSubscription.UseCalendarMonthCycle)
-                        {
-                            newRenewalDate = new DateTime(newPurchasedDate.AddMonths(1).Year,
-                                                                 newPurchasedDate.AddMonths(1).Month,
-                                                                 Math.Min(newPurchasedDate.Day, DateTime.DaysInMonth(newPurchasedDate.AddMonths(1).Year,
-                                                                                                                                     newPurchasedDate.AddMonths(1).Month)));
-                        }
-                        else
-                        {
-                            newRenewalDate = newPurchasedDate.AddDays((newPurchasedDate - oldPurchasedDate).Days);
-                        }
-                        if (oldPurchasedDate.Month == newPurchasedDate.Month)
-                        {
-                            newTimesInMonth += 1;
-                        }
-                        else
-                        {
-                            newTimesInMonth = 1;
-                        }
+                        newRenewalDate = new DateTime(newRenewalDate.AddMonths(1).Year,
+                                                                newRenewalDate.AddMonths(1).Month,
+                                                                Math.Min(newRenewalDate.Day, DateTime.DaysInMonth(newRenewalDate.AddMonths(1).Year,
+                                                                                                                                     newRenewalDate.AddMonths(1).Month)));
                     } while (newRenewalDate <= DateTime.UtcNow);
                     await _subscriptionByUserIds.PutAsync(new()
                     {
@@ -154,11 +111,8 @@ public class Controller : ControllerBase
                         Price = obsoleteSubscription.Price,
                         Currency = obsoleteSubscription.Currency,
                         ChartColor = obsoleteSubscription.ChartColor,
-                        PurchasedDate = newPurchasedDate,
                         RenewalDate = newRenewalDate,
                         IsRecursive = obsoleteSubscription.IsRecursive,
-                        TimesInMonth = newTimesInMonth,
-                        UseCalendarMonthCycle = obsoleteSubscription.UseCalendarMonthCycle
                     });
                 }
             }
@@ -173,7 +127,7 @@ public class Controller : ControllerBase
             subscriptionByUserIdsResponse = await _subscriptionByUserIds.GetAsync(new() { UserId = userId });
             subscriptionByUserIds = subscriptionByUserIdsResponse.Content;
         }
-        var monthTotalPrice = subscriptions.Where(sub => sub.PurchasedDate.Month == DateTime.UtcNow.Month).Select(sub => sub.Price * sub.TimesInMonth).Sum() + subscriptionByUserIds.Where(sub => sub.PurchasedDate.Month == DateTime.UtcNow.Month).Select(sub => sub.Price * sub.TimesInMonth).Sum();
+        var monthTotalPrice = subscriptions.Where(sub => sub.RenewalDate.Month - 1 == DateTime.UtcNow.Month).Select(sub => sub.Price).Sum() + subscriptionByUserIds.Where(sub => sub.RenewalDate.Month - 1 == DateTime.UtcNow.Month).Select(sub => sub.Price).Sum();
         Item item = new Item{};
         item.AppUsages = subscriptions.Select(sub => new AppUsage()
         {
@@ -182,16 +136,16 @@ public class Controller : ControllerBase
             Company = providers.FirstOrDefault(pr => pr.Id == packages.FirstOrDefault(pa => pa.Id == sub.PackageId).ProviderId).Name,
             Icon = providers.FirstOrDefault(pr => pr.Id == packages.FirstOrDefault(pa => pa.Id == sub.PackageId).ProviderId).IconUrl,
             Subscription = packages.FirstOrDefault(pa => pa.Id == sub.PackageId).Name,
-            UsagePercent = (sub.PurchasedDate.Month == DateTime.UtcNow.Month) ? 
-                               (double)((sub.Price * sub.TimesInMonth / monthTotalPrice)*100) :
+            UsagePercent = (sub.RenewalDate.Month - 1 == DateTime.UtcNow.Month) ? 
+                               (double)((sub.Price / monthTotalPrice)*100) :
                                0,
             Price = sub.Price,
             Currency = sub.Currency,
             Discount = null,
             DiscountedPrice = null,
             Hex = sub.ChartColor,
-            DayLeft = $"{(sub.RenewalDate - DateTime.UtcNow).Days} day(s) left",
-            IsPaid = sub.PurchasedDate < DateTime.UtcNow && DateTime.UtcNow < sub.RenewalDate,
+            DayLeft = (sub.RenewalDate - DateTime.UtcNow).Days >= 1 ? $"{(sub.RenewalDate - DateTime.UtcNow).Days} day(s) left" : $"Less than a day",
+            IsPaid = DateTime.UtcNow < sub.RenewalDate,
             IsDiscountApplied = null,
             IsDiscountAvailable = null
         }).ToList();
@@ -205,16 +159,16 @@ public class Controller : ControllerBase
             Company = sub.CompanyName,
             Icon = "dotnet_bot.png",
             Subscription = sub.SubscriptionPlan,
-            UsagePercent = (sub.PurchasedDate.Month == DateTime.UtcNow.Month) ?
-                               (double)((sub.Price * sub.TimesInMonth / monthTotalPrice) * 100) :
+            UsagePercent = (sub.RenewalDate.Month - 1 == DateTime.UtcNow.Month) ?
+                               (double)((sub.Price / monthTotalPrice) * 100) :
                                0,
             Price = sub.Price,
             Currency = sub.Currency,
             Discount = null,
             DiscountedPrice = null,
             Hex = sub.ChartColor,
-            DayLeft = sub.RenewalDate > DateTime.UtcNow ? $"{(sub.RenewalDate - DateTime.UtcNow).Days} day(s) left" : $"{(DateTime.UtcNow - sub.RenewalDate).Days} day(s) passed",
-            IsPaid = sub.PurchasedDate < DateTime.UtcNow && DateTime.UtcNow < sub.RenewalDate,
+            DayLeft = (sub.RenewalDate - DateTime.UtcNow).Days >= 1 ? $"{(sub.RenewalDate - DateTime.UtcNow).Days} day(s) left" : $"Less than a day",
+            IsPaid = DateTime.UtcNow < sub.RenewalDate,
             IsDiscountApplied = null,
             IsDiscountAvailable = null
         }).ToList();
@@ -274,11 +228,8 @@ public class Controller : ControllerBase
                 Price = payload.Price,
                 Currency = payload.Currency,
                 ChartColor = payload.Hex,
-                PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
                 IsRecursive = payload.IsRecursive,
-                TimesInMonth = payload.TimesInMonth,
-                UseCalendarMonthCycle = payload.UseCalendarMonthCycle,
             });
             return Created("", "temp-subscription-created");
         }
@@ -289,11 +240,8 @@ public class Controller : ControllerBase
             Price = payload.Price,
             Currency = payload.Currency,
             ChartColor = payload.Hex,
-            PurchasedDate = payload.PurchasedDate,
             RenewalDate = payload.RenewalDate,
             IsRecursive = payload.IsRecursive,
-            TimesInMonth = payload.TimesInMonth,
-            UseCalendarMonthCycle = payload.UseCalendarMonthCycle,
         });
         return Created("", "subscription-created");
     }
@@ -324,11 +272,8 @@ public class Controller : ControllerBase
                 Price = payload.Price,
                 Currency = payload.Currency,
                 ChartColor = payload.Hex,
-                PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
                 IsRecursive = payload.IsRecursive,
-                TimesInMonth = payload.TimesInMonth,
-                UseCalendarMonthCycle = payload.UseCalendarMonthCycle
             });
             return NoContent();
         }
@@ -346,11 +291,8 @@ public class Controller : ControllerBase
                 Price = payload.Price,
                 Currency = payload.Currency,
                 ChartColor = payload.Hex,
-                PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
                 IsRecursive = payload.IsRecursive,
-                TimesInMonth = payload.TimesInMonth,
-                UseCalendarMonthCycle = payload.UseCalendarMonthCycle
             });
             return NoContent();
         }
@@ -366,11 +308,8 @@ public class Controller : ControllerBase
                 Price = payload.Price,
                 Currency = payload.Currency,
                 ChartColor = payload.Hex,
-                PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
                 IsRecursive = payload.IsRecursive,
-                TimesInMonth = payload.TimesInMonth,
-                UseCalendarMonthCycle = payload.UseCalendarMonthCycle,
             });
             return NoContent();
         }
@@ -389,11 +328,8 @@ public class Controller : ControllerBase
                 Price = payload.Price,
                 Currency = payload.Currency,
                 ChartColor = payload.Hex,
-                PurchasedDate = payload.PurchasedDate,
                 RenewalDate = payload.RenewalDate,
                 IsRecursive = payload.IsRecursive,
-                TimesInMonth = payload.TimesInMonth,
-                UseCalendarMonthCycle = payload.UseCalendarMonthCycle,
             });
             return NoContent();
         }
