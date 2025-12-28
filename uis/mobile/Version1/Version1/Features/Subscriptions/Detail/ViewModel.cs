@@ -30,11 +30,10 @@ public partial class ViewModel : NavigationAwareBaseViewModel
     string? subscriptionPlan;
 
     [ObservableProperty]
-    bool isBusy = false;
+    bool isBusy = true;
 
     public async Task ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        IsBusy = true;
 
         try
         {
