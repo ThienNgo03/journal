@@ -1,5 +1,4 @@
-﻿
-using Navigation;
+﻿using Navigation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,104 +29,103 @@ public partial class ViewModel : NavigationAwareBaseViewModel
     [ObservableProperty]
     string? subscriptionPlan;
 
+    [ObservableProperty]
+    bool isBusy = false;
+
     public async Task ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        // Load companies từ API TRƯỚC
-        var ApiCompanies = await subscriptionDetails.AllCompaniesAsync();
-        companies = ApiCompanies.Content.Select(c => new Provider
+        IsBusy = true;
+
+        try
         {
-            Id = c.Id,
-            Name = c.Company,
-            Subscriptions = c.Subscriptions.Select(s => new Subscription
+            // Load companies từ API
+            var ApiCompanies = await subscriptionDetails.AllCompaniesAsync();
+            companies = ApiCompanies.Content.Select(c => new Provider
             {
-                Id = s.Id,
-                Name = s.Name
-            }).ToList()
-        }).ToList();
-
-        // Gán vào FilteredCompanies
-        FilteredCompanies = new ObservableCollection<Provider>(companies);
-
-        if (query.TryGetValue("__DATA__", out var dataObj) && dataObj is IDictionary<string, object> data)
-        {
-            isLoadingFromNavigation = true;
-
-            // Extract id
-            if (data.TryGetValue("id", out var idObj) && idObj is string idString && Guid.TryParse(idString, out var guid))
-            {
-                Id = guid;
-                CurrentMode = Mode.Edit;
-                ActionButtonText = "Save Changes";
-                IsDeleteButtonVisible = true;
-            }
-
-            // Extract company FIRST
-            if (data.TryGetValue("company", out var companyObj) && companyObj is string companyString)
-            {
-                Company = companyString;
-            }
-
-            // Extract subscription AFTER company is set
-            if (data.TryGetValue("subscription", out var subscriptionObj) && subscriptionObj is string subscriptionString)
-            {
-                SubscriptionPlan = subscriptionString;
-            }
-
-            // Load data từ API khi ở Edit mode
-            if (CurrentMode == Mode.Edit && Id.HasValue)
-            {
-                var response = await subscriptionDetails.GetAsync(
-                    new()
-                    {
-                        UserId = MyApp.CurrentUser.Id.ToString(),
-                        Company = Company,
-                        Subscription = SubscriptionPlan
-                    },
-                    Id.Value
-                );
-
-                // MAP DỮ LIỆU TỪ API VÀO CÁC PROPERTY
-                if (response != null && response.Content != null)
+                Id = c.Id,
+                Name = c.Company,
+                Subscriptions = c.Subscriptions.Select(s => new Subscription
                 {
-                    var detail = response.Content;
+                    Id = s.Id,
+                    Name = s.Name
+                }).ToList()
+            }).ToList();
 
-                    // Map Company
-                    var matchingCompany = companies.FirstOrDefault(c =>
-                        c.Name.Equals(detail.Company, StringComparison.OrdinalIgnoreCase));
-                    if (matchingCompany != null)
-                    {
-                        SelectedCompany = matchingCompany;
-                    }
-                    CompanyValue = detail.Company;
+            // Gán FilteredCompanies NGAY để nó có data
+            FilteredCompanies = new ObservableCollection<Provider>(companies);
 
-                    // Load subscriptions cho company này
-                    //FilteredSubscriptions = new ObservableCollection<Subscription>(matchingCompany.Subscriptions);
+            if (query.TryGetValue("__DATA__", out var dataObj) && dataObj is IDictionary<string, object> data)
+            {
+                isLoadingFromNavigation = true;
 
-                    // Map Subscription
-                    //var matchingSubscription = matchingCompany.Subscriptions.FirstOrDefault(s =>
-                    //    s.Name.Equals(detail.Subscription, StringComparison.OrdinalIgnoreCase));
-                    //if (matchingSubscription != null)
-                    //{
-                    //    SelectedSubscription = matchingSubscription;
-                    SubscriptionValue = detail.Subscription;
-                        //}
-                    //}
-
-                    // Map Price
-                    Price = detail.Price;
-
-                    // Map Color
-                    SelectedColor = detail.Hex ?? "#FF6B6B";
-
-                    // Map Next Renewal Date
-                    NextRenewalSelectedDate = detail.RenewalDate;
-
-                    // Map IsRecursive
-                    IsRecursiveBill = detail.IsRecursive;
+                // Extract id
+                if (data.TryGetValue("id", out var idObj) && idObj is string idString && Guid.TryParse(idString, out var guid))
+                {
+                    Id = guid;
+                    CurrentMode = Mode.Edit;
+                    ActionButtonText = "Save Changes";
+                    IsDeleteButtonVisible = true;
                 }
-            }
 
-            isLoadingFromNavigation = false;
+                // Extract company
+                if (data.TryGetValue("company", out var companyObj) && companyObj is string companyString)
+                {
+                    Company = companyString;
+                }
+
+                // Extract subscription
+                if (data.TryGetValue("subscription", out var subscriptionObj) && subscriptionObj is string subscriptionString)
+                {
+                    SubscriptionPlan = subscriptionString;
+                }
+
+                // Load data từ API khi ở Edit mode
+                if (CurrentMode == Mode.Edit && Id.HasValue)
+                {
+                    var response = await subscriptionDetails.GetAsync(
+                        new()
+                        {
+                            UserId = MyApp.CurrentUser.Id.ToString(),
+                            Company = Company,
+                            Subscription = SubscriptionPlan
+                        },
+                        Id.Value
+                    );
+
+                    if (response != null && response.Content != null)
+                    {
+                        var detail = response.Content;
+
+                        // Tìm matching company
+                        var matchingCompany = companies.FirstOrDefault(c =>
+                            c.Name.Equals(detail.Company, StringComparison.OrdinalIgnoreCase));
+
+                        // Update properties TRƯỚC KHI tắt IsBusy
+                        CompanyValue = detail.Company;
+                        SubscriptionValue = detail.Subscription;
+                        Price = detail.Price;
+                        SelectedColor = detail.Hex ?? "#FF6B6B";
+                        NextRenewalSelectedDate = detail.RenewalDate;
+                        IsRecursiveBill = detail.IsRecursive;
+
+                        // Set SelectedCompany SAU CÙNG vì nó trigger cascade updates
+                        if (matchingCompany != null)
+                        {
+                            SelectedCompany = matchingCompany;
+                        }
+                    }
+                }
+
+                isLoadingFromNavigation = false;
+            }
+        }
+        finally
+        {
+            // Tắt loading
+            IsBusy = false;
+
+            // Yield UI thread để UI có thể render và respond ngay
+            await Task.Yield();
         }
     }
 
@@ -145,40 +143,6 @@ public partial class ViewModel : NavigationAwareBaseViewModel
     string companyValue = string.Empty;
 
     private List<Provider> companies = new();
-    //{
-    //new () {
-    //        Id = Guid.Parse("D3B2F1E4-5C6A-4B8D-9A2F-1B2C3D4E5F6A"),
-    //        Name = "Google",
-    //        Subscriptions = new List<Subscription>
-    //        {
-    //            new () { Id = Guid.NewGuid(), Name = "Google One" },
-    //            new () { Id = Guid.NewGuid(), Name = "YouTube Premium" },
-    //            new() { Id = Guid.NewGuid(), Name = "Google Workspace" },
-    //        }
-    //      },
-    //new()
-    //{
-    //    Id = Guid.Parse("D3B2F1E4-5C6A-4B8D-9A2F-1B2C3D4E5F6B"),
-    //    Name = "Apple",
-    //    Subscriptions = new List<Subscription>
-    //        {
-    //            new() { Id = Guid.NewGuid(), Name = "Apple Music" },
-    //            new() { Id = Guid.NewGuid(), Name = "Apple TV+" },
-    //            new() { Id = Guid.NewGuid(), Name = "iCloud" },
-    //        }
-    //},
-    //new()
-    //{
-    //    Id = Guid.Parse("D3B2F1E4-5C6A-4B8D-9A2F-1B2C3D4E5F6C"),
-    //    Name = "Microsoft",
-    //    Subscriptions = new List<Subscription>
-    //        {
-    //            new() { Id = Guid.NewGuid(), Name = "Microsoft 365" },
-    //            new() { Id = Guid.NewGuid(), Name = "Xbox Game Pass" },
-    //            new() { Id = Guid.NewGuid(), Name = "OneDrive" },
-    //        }
-    //    },
-    //};
 
     [ObservableProperty]
     private ObservableCollection<Provider> filteredCompanies;
@@ -191,9 +155,12 @@ public partial class ViewModel : NavigationAwareBaseViewModel
         if (value != null)
         {
             CompanyValue = value.Name;
-            FilteredSubscriptions = new(value.Subscriptions);
 
-            // Only clear subscription if NOT loading from navigation (i.e., user manually selected)
+            // Update subscriptions dựa trên company được chọn
+            var subscriptions = value.Subscriptions?.ToList() ?? new List<Subscription>();
+            FilteredSubscriptions = new ObservableCollection<Subscription>(subscriptions);
+
+            // Only clear subscription if NOT loading from navigation
             if (!isLoadingFromNavigation)
             {
                 SubscriptionValue = string.Empty;
@@ -205,11 +172,17 @@ public partial class ViewModel : NavigationAwareBaseViewModel
     [RelayCommand]
     private void CompanyTextChanged(string text)
     {
-        FilteredCompanies.Clear();
-        var filtered = companies.Where(item =>
-            item.Name.Contains(text, StringComparison.OrdinalIgnoreCase));
-        foreach (var item in filtered)
-            FilteredCompanies.Add(item);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            FilteredCompanies = new ObservableCollection<Provider>(companies);
+            return;
+        }
+
+        var filtered = companies
+            .Where(item => item.Name.Contains(text, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        FilteredCompanies = new ObservableCollection<Provider>(filtered);
     }
     #endregion
 
@@ -223,13 +196,6 @@ public partial class ViewModel : NavigationAwareBaseViewModel
 
     [ObservableProperty]
     string subscriptionValue = string.Empty;
-
-    //private readonly List<Subscription> subscriptions = new()
-    //{
-    //    new() { Id = Guid.NewGuid(), Name = "Individual" },
-    //    new() { Id = Guid.NewGuid(), Name = "Family" },
-    //    new() { Id = Guid.NewGuid(), Name = "Student plans" },
-    //};
 
     [ObservableProperty]
     private ObservableCollection<Subscription> filteredSubscriptions;
@@ -248,11 +214,20 @@ public partial class ViewModel : NavigationAwareBaseViewModel
     [RelayCommand]
     private void SubscriptionTextChanged(string text)
     {
-        FilteredSubscriptions.Clear();
-        //var filtered = subscriptions.Where(item =>
-        //    item.Name.Contains(text, StringComparison.OrdinalIgnoreCase));
-        //foreach (var item in filtered)
-        //    FilteredSubscriptions.Add(item);
+        if (SelectedCompany?.Subscriptions == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            FilteredSubscriptions = new ObservableCollection<Subscription>(SelectedCompany.Subscriptions);
+            return;
+        }
+
+        var filtered = SelectedCompany.Subscriptions
+            .Where(item => item.Name.Contains(text, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        FilteredSubscriptions = new ObservableCollection<Subscription>(filtered);
     }
     #endregion
 
@@ -323,34 +298,6 @@ public partial class ViewModel : NavigationAwareBaseViewModel
     [ObservableProperty]
     string actionButtonText = "Add";
 
-    //partial void OnCurrentModeChanged(Mode value)
-    //{
-    //    switch (value)
-    //    {
-    //        case Mode.Add:
-    //            ActionButtonText = "Create New Subscription";
-    //            subscriptionDetails.CreateAsync(new()
-    //            {
-    //                UserId = MyApp.CurrentUser.Id.ToString(),
-    //                Company = ,
-    //                Subscription = ,
-    //                Price = ,
-    //                Currency = "VND",
-    //                Hex = ,
-    //                RenewalDate = ,
-    //                IsRecursive =
-    //            });
-    //            break;
-    //        case Mode.Edit:
-    //            ActionButtonText = "Save Changes";
-    //            break;
-    //        default:
-    //            ActionButtonText = "Create New Subscription";
-    //            break;
-    //    }
-    //}
-
-
     [RelayCommand]
     private async Task ActionButtonCommand()
     {
@@ -373,11 +320,13 @@ public partial class ViewModel : NavigationAwareBaseViewModel
             return;
         }
 
-        switch (CurrentMode)
+        IsBusy = true;
+
+        try
         {
-            case Mode.Add:
-                try
-                {
+            switch (CurrentMode)
+            {
+                case Mode.Add:
                     var createResponse = await subscriptionDetails.CreateAsync(new()
                     {
                         UserId = MyApp.CurrentUser.Id.ToString(),
@@ -399,16 +348,9 @@ public partial class ViewModel : NavigationAwareBaseViewModel
                     {
                         await ShowSnackBarAsync("Failed to create subscription");
                     }
-                }
-                catch (Exception ex)
-                {
-                    await ShowSnackBarAsync($"Error: {ex.Message}");
-                }
-                break;
+                    break;
 
-            case Mode.Edit:
-                try
-                {
+                case Mode.Edit:
                     if (!Id.HasValue)
                     {
                         await ShowSnackBarAsync("Invalid subscription ID");
@@ -418,21 +360,20 @@ public partial class ViewModel : NavigationAwareBaseViewModel
                     var updateResponse = await subscriptionDetails.SaveAsync(new()
                     {
                         UserId = MyApp.CurrentUser.Id.ToString(),
-                        OldCompany = Company ?? string.Empty,  // Company ban đầu từ navigation
-                        OldSubscription = SubscriptionPlan ?? string.Empty,  // Subscription ban đầu từ navigation
-                        NewCompany = CompanyValue,  // Company mới từ UI
-                        NewSubscription = SubscriptionValue,  // Subscription mới từ UI
+                        OldCompany = Company ?? string.Empty,
+                        OldSubscription = SubscriptionPlan ?? string.Empty,
+                        NewCompany = CompanyValue,
+                        NewSubscription = SubscriptionValue,
                         Price = Price,
                         Currency = "VND",
-                        Discount = null,  // Nếu có field Discount trong UI thì map vào
-                        DiscountedPrice = null,  // Nếu có field DiscountedPrice trong UI thì map vào
+                        Discount = null,
+                        DiscountedPrice = null,
                         Hex = SelectedColor,
                         RenewalDate = NextRenewalSelectedDate,
                         IsRecursive = IsRecursiveBill,
-                        IsDiscountApplied = null,  // Nếu có field này trong UI thì map vào
-                        IsDiscountAvailable = null  // Nếu có field này trong UI thì map vào
+                        IsDiscountApplied = null,
+                        IsDiscountAvailable = null
                     }, Id.Value);
-
 
                     if (updateResponse != null && updateResponse.IsSuccessStatusCode)
                     {
@@ -443,15 +384,19 @@ public partial class ViewModel : NavigationAwareBaseViewModel
                     {
                         await ShowSnackBarAsync("Failed to save changes");
                     }
-                }
-                catch (Exception ex)
-                {
-                    await ShowSnackBarAsync($"Error: {ex.Message}");
-                }
-                break;
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowSnackBarAsync($"Error: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
@@ -473,6 +418,9 @@ public partial class ViewModel : NavigationAwareBaseViewModel
             await ShowSnackBarAsync("Invalid subscription ID");
             return;
         }
+
+        IsBusy = true;
+
         try
         {
             var deleteResponse = await subscriptionDetails.DeleteAsync(
@@ -484,6 +432,7 @@ public partial class ViewModel : NavigationAwareBaseViewModel
                 },
                 Id.Value
             );
+
             if (deleteResponse != null && deleteResponse.IsSuccessStatusCode)
             {
                 await ShowSnackBarAsync("Deleted successfully!");
@@ -498,12 +447,13 @@ public partial class ViewModel : NavigationAwareBaseViewModel
         {
             await ShowSnackBarAsync($"Error: {ex.Message}");
         }
+        finally
+        {
+            IsBusy = false;
+        }
     }
     #endregion
 }
-
-
-
 
 public class Provider
 {

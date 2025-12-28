@@ -21,26 +21,32 @@ public partial class ViewModel : NavigationAwareBaseViewModel
     [ObservableProperty]
     decimal totalPrice;
 
+    [ObservableProperty]
+    bool isLoading;
 
+    [ObservableProperty]
+    bool hasData;
 
     public ViewModel(IAppNavigator appNavigator, Core.Subscriptions.IRefitInterface subscriptions)
         : base(appNavigator)
     {
         _subscriptions = subscriptions;
-
         AppUsages = new ObservableCollection<AppUsage>();
-
         Month = string.Empty;
-
         TotalPrice = 0;
-
         ChartSlices = new ObservableCollection<ChartSlice>();
-
         CustomBrushes = new ObservableCollection<Brush>();
+        IsLoading = false;
+        HasData = false;
     }
 
     public async Task LoadSubscriptionsAsync()
     {
+        if (IsLoading) return;
+
+        IsLoading = true;
+        HasData = false;
+
         try
         {
             var result = await _subscriptions.AllAsync(new() { UserId = MyApp?.CurrentUser?.Id.ToString() });
@@ -66,7 +72,7 @@ public partial class ViewModel : NavigationAwareBaseViewModel
                     });
                 }
             }
-            
+
             if (result?.Content?.ChartSlices != null)
             {
                 foreach (var chartSlice in result.Content.ChartSlices)
@@ -86,14 +92,19 @@ public partial class ViewModel : NavigationAwareBaseViewModel
                     CustomBrushes.Add(new SolidColorBrush(Color.FromArgb(customBrush)));
                 }
             }
-            Month = result.Content.Month;
-            TotalPrice = result.Content.TotalPrice;
-            
 
+            Month = result?.Content?.Month ?? string.Empty;
+            TotalPrice = result?.Content?.TotalPrice ?? 0;
+
+            HasData = AppUsages.Any();
         }
         catch (Exception ex)
         {
             await ShowSnackBarAsync($"Error loading subscriptions: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 

@@ -5,136 +5,227 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:Version1.Features.Subscriptions.Detail"
     xmlns:syncfusionToolkit="http://schemas.syncfusion.com/maui/toolkit"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     xmlns:zoft="http://zoft.MauiExtensions/Controls"
     x:DataType="local:ViewModel"
     BackgroundColor="#000000">
-    <ScrollView Padding="16">
-        <VerticalStackLayout Spacing="16">
-            <!--  Company  -->
-            <Border
-                Padding="16"
-                BackgroundColor="#171717"
-                Stroke="#fafafa"
-                StrokeShape="RoundRectangle 4"
-                StrokeThickness="0.5">
-                <VerticalStackLayout Spacing="8">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="Subtitle"
-                        Text="{x:Binding Section1Title}"
-                        TextColor="#fafafa" />
-                    <Label
-                        FontSize="Small"
-                        Text="YouTube, Apple Music, Spotify, etc."
-                        TextColor="#fafafa" />
-                    <syncfusionToolkit:SfPicker
-                        Mode="RelativeDialog"
-                        RelativePosition="AlignTopLeft"
-                        RelativeView="{x:Reference ProviderPickerButton}" />
-                    <syncfusionToolkit:SfButton
-                        x:Name="ProviderPickerButton"
-                        Background="#525252"
-                        CornerRadius="4"
-                        HorizontalOptions="Fill"
-                        Text="Provider" />
-                    <syncfusionToolkit:SfTextInputLayout
-                        ContainerType="Outlined"
-                        FocusedStrokeThickness="0.5"
-                        InputViewPadding="14,0,0,0"
-                        OutlineCornerRadius="4"
-                        ReserveSpaceForAssistiveLabels="False"
-                        Stroke="White">
-                        <zoft:AutoCompleteEntry
-                            BackgroundColor="Transparent"
-                            DisplayMemberPath="Name"
-                            HeightRequest="44"
-                            ItemsSource="{x:Binding FilteredCompanies}"
-                            Placeholder="{x:Binding CompanySearchText}"
-                            PlaceholderColor="LightGray"
-                            SelectedSuggestion="{x:Binding SelectedCompany}"
-                            Text="{x:Binding CompanyValue,
-                                             Mode=TwoWay}"
-                            TextChangedCommand="{x:Binding CompanyTextChangedCommand}"
-                            TextColor="White"
-                            TextMemberPath="Name" />
-                    </syncfusionToolkit:SfTextInputLayout>
-                </VerticalStackLayout>
-            </Border>
-            <!--  Subscription  -->
-            <Border
-                Padding="16"
-                BackgroundColor="#171717"
-                Stroke="#fafafa"
-                StrokeShape="RoundRectangle 4"
-                StrokeThickness="0.5">
-                <VerticalStackLayout Spacing="8">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="Subtitle"
-                        Text="{x:Binding Section2Title}"
-                        TextColor="#fafafa" />
-                    <Label
-                        FontSize="Small"
-                        Text="{x:Binding SubscriptionSearchText}"
-                        TextColor="#fafafa" />
-                    <syncfusionToolkit:SfPicker
-                        Mode="RelativeDialog"
-                        RelativePosition="AlignTopLeft"
-                        RelativeView="{x:Reference SubscriptionPickerButton}" />
-                    <syncfusionToolkit:SfButton
-                        x:Name="SubscriptionPickerButton"
-                        Background="#525252"
-                        CornerRadius="4"
-                        HorizontalOptions="Fill"
-                        Text="Subscription" />
-                    <syncfusionToolkit:SfTextInputLayout
-                        ContainerType="Outlined"
-                        FocusedStrokeThickness="0.5"
-                        InputViewPadding="14,0,0,4"
-                        OutlineCornerRadius="4"
-                        ReserveSpaceForAssistiveLabels="False"
-                        Stroke="White">
-                        <zoft:AutoCompleteEntry
-                            BackgroundColor="Transparent"
-                            DisplayMemberPath="Name"
-                            HeightRequest="44"
-                            ItemsSource="{x:Binding FilteredSubscriptions,
-                                                    Mode=OneWay}"
-                            Placeholder="{x:Binding SubscriptionSearchText}"
-                            PlaceholderColor="LightGray"
-                            SelectedSuggestion="{x:Binding SelectedSubscription}"
-                            Text="{x:Binding SubscriptionValue,
-                                             Mode=TwoWay}"
-                            TextChangedCommand="{x:Binding SubscriptionTextChangedCommand}"
-                            TextColor="White"
-                            TextMemberPath="Name" />
-                    </syncfusionToolkit:SfTextInputLayout>
-                </VerticalStackLayout>
-            </Border>
-            <!--  Color  -->
-            <Border
-                Padding="16"
-                BackgroundColor="#171717"
-                Stroke="#fafafa"
-                StrokeShape="RoundRectangle 4"
-                StrokeThickness="0.5">
-                <VerticalStackLayout Spacing="8">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="Subtitle"
-                        Text="Color:"
-                        TextColor="#fafafa" />
 
-                    <!--  Chọn màu custom  -->
-                    <Grid ColumnSpacing="16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="50" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button
-                            BackgroundColor="{x:Binding SelectedColor}"
-                            HeightRequest="45"
-                            WidthRequest="45" />
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid>
+        <!--  Content chính - ẨN khi đang loading  -->
+        <ScrollView Padding="16" IsVisible="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}">
+
+            <VerticalStackLayout Spacing="16">
+                <!--  Company  -->
+                <Border
+                    Padding="16"
+                    BackgroundColor="#171717"
+                    Stroke="#fafafa"
+                    StrokeShape="RoundRectangle 4"
+                    StrokeThickness="0.5">
+                    <VerticalStackLayout Spacing="8">
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="Subtitle"
+                            Text="{x:Binding Section1Title}"
+                            TextColor="#fafafa" />
+                        <Label
+                            FontSize="Small"
+                            Text="YouTube, Apple Music, Spotify, etc."
+                            TextColor="#fafafa" />
+                        <syncfusionToolkit:SfPicker
+                            Mode="RelativeDialog"
+                            RelativePosition="AlignTopLeft"
+                            RelativeView="{x:Reference ProviderPickerButton}" />
+                        <syncfusionToolkit:SfButton
+                            x:Name="ProviderPickerButton"
+                            Background="#525252"
+                            CornerRadius="4"
+                            HorizontalOptions="Fill"
+                            Text="Provider" />
+                        <syncfusionToolkit:SfTextInputLayout
+                            ContainerType="Outlined"
+                            FocusedStrokeThickness="0.5"
+                            InputViewPadding="14,0,0,0"
+                            OutlineCornerRadius="4"
+                            ReserveSpaceForAssistiveLabels="False"
+                            Stroke="White">
+                            <zoft:AutoCompleteEntry
+                                BackgroundColor="Transparent"
+                                DisplayMemberPath="Name"
+                                HeightRequest="44"
+                                ItemsSource="{x:Binding FilteredCompanies}"
+                                Placeholder="{x:Binding CompanySearchText}"
+                                PlaceholderColor="LightGray"
+                                SelectedSuggestion="{x:Binding SelectedCompany}"
+                                Text="{x:Binding CompanyValue,
+                                                 Mode=TwoWay}"
+                                TextChangedCommand="{x:Binding CompanyTextChangedCommand}"
+                                TextColor="White"
+                                TextMemberPath="Name" />
+                        </syncfusionToolkit:SfTextInputLayout>
+                    </VerticalStackLayout>
+                </Border>
+                <!--  Subscription  -->
+                <Border
+                    Padding="16"
+                    BackgroundColor="#171717"
+                    Stroke="#fafafa"
+                    StrokeShape="RoundRectangle 4"
+                    StrokeThickness="0.5">
+                    <VerticalStackLayout Spacing="8">
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="Subtitle"
+                            Text="{x:Binding Section2Title}"
+                            TextColor="#fafafa" />
+                        <Label
+                            FontSize="Small"
+                            Text="{x:Binding SubscriptionSearchText}"
+                            TextColor="#fafafa" />
+                        <syncfusionToolkit:SfPicker
+                            Mode="RelativeDialog"
+                            RelativePosition="AlignTopLeft"
+                            RelativeView="{x:Reference SubscriptionPickerButton}" />
+                        <syncfusionToolkit:SfButton
+                            x:Name="SubscriptionPickerButton"
+                            Background="#525252"
+                            CornerRadius="4"
+                            HorizontalOptions="Fill"
+                            Text="Subscription" />
+                        <syncfusionToolkit:SfTextInputLayout
+                            ContainerType="Outlined"
+                            FocusedStrokeThickness="0.5"
+                            InputViewPadding="14,0,0,4"
+                            OutlineCornerRadius="4"
+                            ReserveSpaceForAssistiveLabels="False"
+                            Stroke="White">
+                            <zoft:AutoCompleteEntry
+                                BackgroundColor="Transparent"
+                                DisplayMemberPath="Name"
+                                HeightRequest="44"
+                                ItemsSource="{x:Binding FilteredSubscriptions,
+                                                        Mode=OneWay}"
+                                Placeholder="{x:Binding SubscriptionSearchText}"
+                                PlaceholderColor="LightGray"
+                                SelectedSuggestion="{x:Binding SelectedSubscription}"
+                                Text="{x:Binding SubscriptionValue,
+                                                 Mode=TwoWay}"
+                                TextChangedCommand="{x:Binding SubscriptionTextChangedCommand}"
+                                TextColor="White"
+                                TextMemberPath="Name" />
+                        </syncfusionToolkit:SfTextInputLayout>
+                    </VerticalStackLayout>
+                </Border>
+                <!--  Color  -->
+                <Border
+                    Padding="16"
+                    BackgroundColor="#171717"
+                    Stroke="#fafafa"
+                    StrokeShape="RoundRectangle 4"
+                    StrokeThickness="0.5">
+                    <VerticalStackLayout Spacing="8">
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="Subtitle"
+                            Text="Color:"
+                            TextColor="#fafafa" />
+
+                        <!--  Chọn màu custom  -->
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button
+                                BackgroundColor="{x:Binding SelectedColor}"
+                                HeightRequest="45"
+                                WidthRequest="45" />
+                            <syncfusionToolkit:SfTextInputLayout
+                                Grid.Column="1"
+                                ContainerType="Outlined"
+                                FocusedStrokeThickness="0.5"
+                                InputViewPadding="14,0,0,0"
+                                OutlineCornerRadius="4"
+                                ReserveSpaceForAssistiveLabels="False"
+                                Stroke="White">
+                                <Entry
+                                    Placeholder="Other provider..."
+                                    PlaceholderColor="White"
+                                    Text="{x:Binding SelectedColor,
+                                                     Mode=TwoWay}"
+                                    TextColor="White" />
+                            </syncfusionToolkit:SfTextInputLayout>
+                        </Grid>
+
+                        <!--  Pallate có sẵn  -->
+                        <CollectionView
+                            ItemsSource="{x:Binding Colors}"
+                            SelectedItem="{x:Binding SelectedColor,
+                                                     Mode=TwoWay}"
+                            SelectionMode="Single">
+                            <CollectionView.ItemsLayout>
+                                <GridItemsLayout
+                                    HorizontalItemSpacing="16"
+                                    Orientation="Vertical"
+                                    Span="6"
+                                    VerticalItemSpacing="16" />
+                            </CollectionView.ItemsLayout>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Border
+                                        x:Name="container"
+                                        Margin="4"
+                                        BackgroundColor="{x:Binding .}"
+                                        HeightRequest="45"
+                                        Stroke="White"
+                                        StrokeShape="RoundRectangle 8"
+                                        StrokeThickness="0"
+                                        WidthRequest="45">
+                                        <VisualStateManager.VisualStateGroups>
+                                            <VisualStateGroup x:Name="CommonStates">
+                                                <VisualState x:Name="Normal">
+                                                    <VisualState.Setters>
+                                                        <Setter TargetName="container" Property="BackgroundColor" Value="{x:Binding .}" />
+                                                        <Setter TargetName="container" Property="StrokeThickness" Value="0" />
+                                                    </VisualState.Setters>
+                                                </VisualState>
+                                                <VisualState x:Name="Selected">
+                                                    <VisualState.Setters>
+                                                        <Setter TargetName="container" Property="BackgroundColor" Value="{x:Binding .}" />
+                                                        <Setter TargetName="container" Property="StrokeThickness" Value="4" />
+                                                    </VisualState.Setters>
+                                                </VisualState>
+                                            </VisualStateGroup>
+                                        </VisualStateManager.VisualStateGroups>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                            <CollectionView.Footer>
+                                <Label Text="Choose a color to distinguish services more clearly" TextColor="White" />
+                            </CollectionView.Footer>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+                <!--  Price  -->
+                <Border
+                    Padding="16"
+                    BackgroundColor="#171717"
+                    Stroke="#fafafa"
+                    StrokeShape="RoundRectangle 4"
+                    StrokeThickness="0.5">
+                    <VerticalStackLayout Spacing="8">
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="Subtitle"
+                            Text="{x:Binding Section4Title}"
+                            TextColor="#fafafa" />
+
                         <syncfusionToolkit:SfTextInputLayout
                             Grid.Column="1"
                             ContainerType="Outlined"
@@ -143,230 +234,167 @@
                             OutlineCornerRadius="4"
                             ReserveSpaceForAssistiveLabels="False"
                             Stroke="White">
-                            <Entry
-                                Placeholder="Other provider..."
+                            <syncfusionToolkit:SfNumericUpDown
+                                ClearButtonColor="White"
+                                CustomFormat="0₫"
+                                HeightRequest="44"
                                 PlaceholderColor="White"
-                                Text="{x:Binding SelectedColor,
-                                                 Mode=TwoWay}"
-                                TextColor="White" />
+                                TextColor="White"
+                                UpDownButtonColor="White"
+                                Value="{x:Binding Price,
+                                                  Mode=TwoWay}" />
                         </syncfusionToolkit:SfTextInputLayout>
-                    </Grid>
-
-                    <!--  Pallate có sẵn  -->
-                    <CollectionView
-                        ItemsSource="{x:Binding Colors}"
-                        SelectedItem="{x:Binding SelectedColor,
-                                                 Mode=TwoWay}"
-                        SelectionMode="Single">
-                        <CollectionView.ItemsLayout>
-                            <GridItemsLayout
-                                HorizontalItemSpacing="16"
-                                Orientation="Vertical"
-                                Span="6"
-                                VerticalItemSpacing="16" />
-                        </CollectionView.ItemsLayout>
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="x:String">
-                                <Border
-                                    x:Name="container"
-                                    Margin="4"
-                                    BackgroundColor="{x:Binding .}"
-                                    HeightRequest="45"
-                                    Stroke="White"
-                                    StrokeShape="RoundRectangle 8"
-                                    StrokeThickness="0"
-                                    WidthRequest="45">
-                                    <VisualStateManager.VisualStateGroups>
-                                        <VisualStateGroup x:Name="CommonStates">
-                                            <VisualState x:Name="Normal">
-                                                <VisualState.Setters>
-                                                    <Setter TargetName="container" Property="BackgroundColor" Value="{x:Binding .}" />
-                                                    <Setter TargetName="container" Property="StrokeThickness" Value="0" />
-                                                </VisualState.Setters>
-                                            </VisualState>
-                                            <VisualState x:Name="Selected">
-                                                <VisualState.Setters>
-                                                    <Setter TargetName="container" Property="BackgroundColor" Value="{x:Binding .}" />
-                                                    <Setter TargetName="container" Property="StrokeThickness" Value="4" />
-                                                </VisualState.Setters>
-                                            </VisualState>
-                                        </VisualStateGroup>
-                                    </VisualStateManager.VisualStateGroups>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                        <CollectionView.Footer>
-                            <Label Text="Choose a color to distinguish services more clearly" TextColor="White" />
-                        </CollectionView.Footer>
-                    </CollectionView>
-                </VerticalStackLayout>
-            </Border>
-            <!--  Price  -->
-            <Border
-                Padding="16"
-                BackgroundColor="#171717"
-                Stroke="#fafafa"
-                StrokeShape="RoundRectangle 4"
-                StrokeThickness="0.5">
-                <VerticalStackLayout Spacing="8">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="Subtitle"
-                        Text="{x:Binding Section4Title}"
-                        TextColor="#fafafa" />
-
-                    <syncfusionToolkit:SfTextInputLayout
-                        Grid.Column="1"
-                        ContainerType="Outlined"
-                        FocusedStrokeThickness="0.5"
-                        InputViewPadding="14,0,0,0"
-                        OutlineCornerRadius="4"
-                        ReserveSpaceForAssistiveLabels="False"
-                        Stroke="White">
-                        <syncfusionToolkit:SfNumericUpDown
-                            ClearButtonColor="White"
-                            CustomFormat="0₫"
-                            HeightRequest="44"
-                            PlaceholderColor="White"
-                            TextColor="White"
-                            UpDownButtonColor="White"
-                            Value="{x:Binding Price,
-                                              Mode=TwoWay}" />
-                    </syncfusionToolkit:SfTextInputLayout>
-                </VerticalStackLayout>
-            </Border>
-            <!--  Next Renewal Date  -->
-            <Border
-                Padding="16"
-                BackgroundColor="#171717"
-                Stroke="#fafafa"
-                StrokeShape="RoundRectangle 4"
-                StrokeThickness="0.5">
-                <VerticalStackLayout Spacing="8">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="Subtitle"
-                        Text="{x:Binding Section5Title}"
-                        TextColor="#fafafa" />
-                    <Border StrokeShape="RoundRectangle 8">
-                        <syncfusionToolkit:SfDatePicker BackgroundColor="#a8a29e" SelectedDate="{x:Binding NextRenewalSelectedDate, Mode=TwoWay}">
-                            <syncfusionToolkit:SfDatePicker.ColumnHeaderView>
-                                <syncfusionToolkit:DatePickerColumnHeaderView
-                                    Background="Transparent"
-                                    DayHeaderText="Day"
-                                    MonthHeaderText="Month"
-                                    YearHeaderText="Year" />
-                            </syncfusionToolkit:SfDatePicker.ColumnHeaderView>
-                            <syncfusionToolkit:SfDatePicker.SelectionView>
-                                <syncfusionToolkit:PickerSelectionView
-                                    Padding="10,5,10,5"
-                                    Background="Black"
-                                    CornerRadius="10"
-                                    Stroke="White" />
-                            </syncfusionToolkit:SfDatePicker.SelectionView>
-                        </syncfusionToolkit:SfDatePicker>
-                    </Border>
-                    <HorizontalStackLayout HorizontalOptions="End">
+                    </VerticalStackLayout>
+                </Border>
+                <!--  Next Renewal Date  -->
+                <Border
+                    Padding="16"
+                    BackgroundColor="#171717"
+                    Stroke="#fafafa"
+                    StrokeShape="RoundRectangle 4"
+                    StrokeThickness="0.5">
+                    <VerticalStackLayout Spacing="8">
                         <Label
-                            Text="Recursive bill?"
-                            TextColor="White"
-                            VerticalOptions="Center" />
-                        <CheckBox
-                            Margin="0"
-                            IsChecked="{x:Binding IsRecursiveBill,
-                                                  Mode=TwoWay}"
-                            MinimumHeightRequest="0"
-                            MinimumWidthRequest="0"
-                            Color="White" />
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-            </Border>
+                            FontAttributes="Bold"
+                            FontSize="Subtitle"
+                            Text="{x:Binding Section5Title}"
+                            TextColor="#fafafa" />
+                        <Border StrokeShape="RoundRectangle 8">
+                            <syncfusionToolkit:SfDatePicker BackgroundColor="#a8a29e" SelectedDate="{x:Binding NextRenewalSelectedDate, Mode=TwoWay}">
+                                <syncfusionToolkit:SfDatePicker.ColumnHeaderView>
+                                    <syncfusionToolkit:DatePickerColumnHeaderView
+                                        Background="Transparent"
+                                        DayHeaderText="Day"
+                                        MonthHeaderText="Month"
+                                        YearHeaderText="Year" />
+                                </syncfusionToolkit:SfDatePicker.ColumnHeaderView>
+                                <syncfusionToolkit:SfDatePicker.SelectionView>
+                                    <syncfusionToolkit:PickerSelectionView
+                                        Padding="10,5,10,5"
+                                        Background="Black"
+                                        CornerRadius="10"
+                                        Stroke="White" />
+                                </syncfusionToolkit:SfDatePicker.SelectionView>
+                            </syncfusionToolkit:SfDatePicker>
+                        </Border>
+                        <HorizontalStackLayout HorizontalOptions="End">
+                            <Label
+                                Text="Recursive bill?"
+                                TextColor="White"
+                                VerticalOptions="Center" />
+                            <CheckBox
+                                Margin="0"
+                                IsChecked="{x:Binding IsRecursiveBill,
+                                                      Mode=TwoWay}"
+                                MinimumHeightRequest="0"
+                                MinimumWidthRequest="0"
+                                Color="White" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
 
-            <Border
-                Padding="16"
-                BackgroundColor="#171717"
-                Stroke="#fafafa"
-                StrokeShape="RoundRectangle 4"
-                StrokeThickness="0.5">
-                <VerticalStackLayout Spacing="8">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="Subtitle"
-                        Text="Testing (DEV)"
-                        TextColor="#fafafa" />
-                    <Label TextColor="#fafafa">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Company value: " />
-                                <Span FontAttributes="Bold" Text="{x:Binding CompanyValue}" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                    <Label TextColor="#fafafa">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Subscription value: " />
-                                <Span FontAttributes="Bold" Text="{x:Binding SubscriptionValue}" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                    <Label TextColor="#fafafa">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Color value: " />
-                                <Span FontAttributes="Bold" Text="{x:Binding SelectedColor}" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                    <Label TextColor="#fafafa">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Price value: " />
-                                <Span FontAttributes="Bold" Text="{x:Binding Price}" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                    <Label TextColor="#fafafa">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Next Renewable Date value: " />
-                                <Span FontAttributes="Bold" Text="{x:Binding NextRenewalSelectedDate}" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                </VerticalStackLayout>
-            </Border>
+                <Border
+                    Padding="16"
+                    BackgroundColor="#171717"
+                    Stroke="#fafafa"
+                    StrokeShape="RoundRectangle 4"
+                    StrokeThickness="0.5">
+                    <VerticalStackLayout Spacing="8">
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="Subtitle"
+                            Text="Testing (DEV)"
+                            TextColor="#fafafa" />
+                        <Label TextColor="#fafafa">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Company value: " />
+                                    <Span FontAttributes="Bold" Text="{x:Binding CompanyValue}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label TextColor="#fafafa">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Subscription value: " />
+                                    <Span FontAttributes="Bold" Text="{x:Binding SubscriptionValue}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label TextColor="#fafafa">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Color value: " />
+                                    <Span FontAttributes="Bold" Text="{x:Binding SelectedColor}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label TextColor="#fafafa">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Price value: " />
+                                    <Span FontAttributes="Bold" Text="{x:Binding Price}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label TextColor="#fafafa">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Next Renewable Date value: " />
+                                    <Span FontAttributes="Bold" Text="{x:Binding NextRenewalSelectedDate}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </VerticalStackLayout>
+                </Border>
 
-            <Border
-                Padding="16"
-                BackgroundColor="#171717"
-                Stroke="#fafafa"
-                StrokeShape="RoundRectangle 4"
-                StrokeThickness="0.5">
-                <syncfusionToolkit:SfButton
-                    x:Name="ActionButton"
-                    Background="#2b2b2b"
-                    Command="{x:Binding ActionButtonCommandCommand}"
-                    CornerRadius="4"
-                    Text="{x:Binding ActionButtonText}"
+                <Border
+                    Padding="16"
+                    BackgroundColor="#171717"
+                    Stroke="#fafafa"
+                    StrokeShape="RoundRectangle 4"
+                    StrokeThickness="0.5">
+                    <syncfusionToolkit:SfButton
+                        x:Name="ActionButton"
+                        Background="#2b2b2b"
+                        Command="{x:Binding ActionButtonCommandCommand}"
+                        CornerRadius="4"
+                        Text="{x:Binding ActionButtonText}"
+                        TextColor="White" />
+                </Border>
+
+                <Border
+                    Padding="16"
+                    BackgroundColor="#171717"
+                    IsVisible="{x:Binding IsDeleteButtonVisible}"
+                    Stroke="#fafafa"
+                    StrokeShape="RoundRectangle 4"
+                    StrokeThickness="0.5">
+                    <syncfusionToolkit:SfButton
+                        x:Name="DeleteButton"
+                        Background="#2b2b2b"
+                        Command="{x:Binding DeleteButtonCommandCommand}"
+                        CornerRadius="4"
+                        Text="Delete Subscription"
+                        TextColor="Red" />
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+        <Grid BackgroundColor="#CC000000" IsVisible="{Binding IsBusy}">
+            <VerticalStackLayout
+                HorizontalOptions="Center"
+                Spacing="16"
+                VerticalOptions="Center">
+                <ActivityIndicator
+                    HeightRequest="50"
+                    IsRunning="{Binding IsBusy}"
+                    WidthRequest="50"
+                    Color="White" />
+                <Label
+                    FontSize="16"
+                    Text="Loading..."
                     TextColor="White" />
-            </Border>
-
-            <Border
-                Padding="16"
-                BackgroundColor="#171717"
-                IsVisible="{x:Binding IsDeleteButtonVisible}"
-                Stroke="#fafafa"
-                StrokeShape="RoundRectangle 4"
-                StrokeThickness="0.5">
-                <syncfusionToolkit:SfButton
-                    x:Name="DeleteButton"
-                    Background="#2b2b2b"
-                    Command="{x:Binding DeleteButtonCommandCommand}"
-                    CornerRadius="4"
-                    Text="Delete Subscription"
-                    TextColor="Red" />
-            </Border>
-        </VerticalStackLayout>
-    </ScrollView>
+            </VerticalStackLayout>
+        </Grid>
+    </Grid>
 </ContentPage>
