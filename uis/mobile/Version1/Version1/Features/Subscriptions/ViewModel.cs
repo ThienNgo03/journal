@@ -1,105 +1,107 @@
-﻿
-using Mvvm;
+﻿using CommunityToolkit.Maui.Core.Extensions;
 using Navigation;
+using Version1.Features.Subscriptions;
 
-namespace Version1.Features.Subscriptions;
-
-public partial class ViewModel(
-    IAppNavigator appNavigator,
-    Core.Exercises.Interface exercises ) : BaseViewModel(appNavigator)
+public partial class ViewModel : NavigationAwareBaseViewModel
 {
-}
-
-
-public partial class AppUsage : ObservableObject
-{
-    [ObservableProperty]
-    string company;
+    private readonly Core.Subscriptions.IRefitInterface _subscriptions;
 
     [ObservableProperty]
-    string icon;
+    ObservableCollection<AppUsage> appUsages;
 
     [ObservableProperty]
-    string subscription;
+    ObservableCollection<ChartSlice> chartSlices;
 
     [ObservableProperty]
-    double usagePercent;
+    ObservableCollection<Brush> customBrushes;
 
     [ObservableProperty]
-    decimal price;
+    string month;
 
     [ObservableProperty]
-    string? discount; // "$10.99 (-15$) format
+    decimal totalPrice;
 
-    [ObservableProperty]
-    string hex;
 
-    [ObservableProperty]
-    string dayLeft;
 
-    [ObservableProperty]
-    bool isPaid;
-
-    [ObservableProperty]
-    bool isDiscountApplied;
-}
-
-public class SumPriceConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public ViewModel(IAppNavigator appNavigator, Core.Subscriptions.IRefitInterface subscriptions)
+        : base(appNavigator)
     {
-        var items = value as IEnumerable<AppUsage>;
-        return items?.Sum(i => i.Price) ?? 0;
+        _subscriptions = subscriptions;
+
+        AppUsages = new ObservableCollection<AppUsage>();
+
+        Month = string.Empty;
+
+        TotalPrice = 0;
+
+        ChartSlices = new ObservableCollection<ChartSlice>();
+
+        CustomBrushes = new ObservableCollection<Brush>();
     }
 
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public async Task LoadSubscriptionsAsync()
     {
-        throw new NotImplementedException();
-    }
-}
-
-public class TextDecorationsConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (value is bool isDiscountApplied && isDiscountApplied)
+        try
         {
-            return TextDecorations.Strikethrough;
+            var result = await _subscriptions.AllAsync(new() { UserId = MyApp?.CurrentUser?.Id.ToString() });
+
+            AppUsages.Clear();
+            ChartSlices.Clear();
+            CustomBrushes.Clear();
+
+            if (result?.Content?.AppUsages != null)
+            {
+                foreach (var appUsage in result.Content.AppUsages)
+                {
+                    AppUsages.Add(new AppUsage
+                    {
+                        Id = appUsage.Id.ToString(),
+                        Company = appUsage.Company,
+                        Icon = appUsage.Icon,
+                        Subscription = appUsage.Subscription,
+                        Price = appUsage.Price,
+                        Hex = appUsage.Hex ?? "#FF6B6B",
+                        DayLeft = appUsage.DayLeft,
+                        IsPaid = appUsage.IsPaid,
+                    });
+                }
+            }
+            
+            if (result?.Content?.ChartSlices != null)
+            {
+                foreach (var chartSlice in result.Content.ChartSlices)
+                {
+                    ChartSlices.Add(new ChartSlice
+                    {
+                        Subscription = chartSlice.Subscription,
+                        Price = chartSlice.Price,
+                    });
+                }
+            }
+
+            if (result?.Content?.CustomBrushes != null)
+            {
+                foreach (var customBrush in result.Content.CustomBrushes)
+                {
+                    CustomBrushes.Add(new SolidColorBrush(Color.FromArgb(customBrush)));
+                }
+            }
+            Month = result.Content.Month;
+            TotalPrice = result.Content.TotalPrice;
+            
+
         }
-        return TextDecorations.None;
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class USDToVNDConverter : IValueConverter
-{
-    // Tỷ giá USD sang VND (có thể điều chỉnh theo tỷ giá hiện tại)
-    private const decimal ExchangeRate = 24500m;
-
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (value is decimal usdPrice)
+        catch (Exception ex)
         {
-            decimal vndPrice = usdPrice * ExchangeRate;
-            return vndPrice.ToString("N0", new CultureInfo("vi-VN")) + " ₫";
+            await ShowSnackBarAsync($"Error loading subscriptions: {ex.Message}");
         }
-
-        if (value is IEnumerable<AppUsage> items)
-        {
-            decimal totalUSD = items.Sum(i => i.Price);
-            decimal totalVND = totalUSD * ExchangeRate;
-            return totalVND.ToString("N0", new CultureInfo("vi-VN")) + " ₫";
-        }
-
-        return "0 ₫";
     }
 
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public async Task ShowSnackBarAsync(string message)
     {
-        throw new NotImplementedException();
+        await AppNavigator.ShowSnackbarAsync(message);
     }
+
+    public async Task NavigateAsync(string route, object args)
+        => await AppNavigator.NavigateAsync(route, args: args, animated: true);
 }

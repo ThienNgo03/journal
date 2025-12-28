@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Syncfusion.Maui.Toolkit.Hosting;
 using Version1.Features.Authentication;
 using SkiaSharp.Views.Maui.Controls.Hosting;
+using zoft.MauiExtensions.Controls;
 
 namespace Version1;
 
@@ -31,6 +32,7 @@ public static class MauiProgram
             .RegisterCore()
             .RegisterFeatures()
             .RegisterPages()
+            .UseZoftAutoCompleteEntry()
             .UseSkiaSharp();
 
 #if DEBUG
@@ -51,12 +53,12 @@ public static class MauiProgram
 
 
         var libraryConfig = new Library.Config(
-                    url: "https://nnwwttc0-7011.asse.devtunnels.ms/",
+                    url: "https://1bw60b9k-7011.asse.devtunnels.ms/",
                     secretKey: "secretKey"
                 );
         builder.Services.AddEndpoints(libraryConfig);
 
-        Core.Config config = new("https://5zp1ktts-7245.asse.devtunnels.ms/");
+        Core.Config config = new("https://1bw60b9k-7245.asse.devtunnels.ms/");
         builder.Services.AddBff(config);
         return builder;
     }

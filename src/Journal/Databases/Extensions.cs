@@ -45,7 +45,7 @@ public static class Extensions
             .WithDatabase(journalDbConfig.Database)
             .WithUsername(journalDbConfig.Username)
             .WithPassword(journalDbConfig.Password)
-            //.WithTrustedConnection()
+            .WithTrustedConnection()
             .WithTrustServerCertificate()
             .Build();
 
@@ -55,7 +55,7 @@ public static class Extensions
             .WithDatabase(identityDbConfig.Database)
             .WithUsername(identityDbConfig.Username)
             .WithPassword(identityDbConfig.Password)
-            //.WithTrustedConnection()
+            .WithTrustedConnection()
             .WithTrustServerCertificate()
             .Build();
 

@@ -6,15 +6,17 @@
     xmlns:local="clr-namespace:Version1.Features.Subscriptions"
     xmlns:syncfusionToolkit="http://schemas.syncfusion.com/maui/toolkit"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-    BackgroundColor="#f7f8fa">
+    Appearing="ContentPage_Appearing"
+    BackgroundColor="#000000">
     <ContentPage.Resources>
         <x:Array x:Key="AppUsages" Type="{x:Type local:AppUsage}">
             <local:AppUsage
                 Company="Google"
                 DayLeft="12"
-                Discount="$2.00 (-10%)"
+                Discount="$10.98 (-10%)"
                 Hex="#FF0000"
                 Icon="youtube.png"
+                Id="0fcfd3da-6b0f-4e71-9481-8e6432371d2e"
                 IsDiscountApplied="True"
                 IsPaid="True"
                 Price="19.99"
@@ -23,9 +25,9 @@
             <local:AppUsage
                 Company="Apple"
                 DayLeft="15"
-                Discount="$1.80 (-10%)"
                 Hex="#FF4E6B"
                 Icon="apple_music.jpg"
+                Id="cb6f0178-ff82-4ae6-9785-9b79e6e53494"
                 IsDiscountApplied="False"
                 IsPaid="True"
                 Price="17.99"
@@ -37,7 +39,9 @@
                 Discount="$1.60 (-10%)"
                 Hex="#1ED760"
                 Icon="spotify.png"
-                IsDiscountApplied="True"
+                Id="9b98d9b4-a6c4-4415-9c1e-8878f00ea05d"
+                IsDiscountApplied="False"
+                IsDiscountAvailable="True"
                 IsPaid="True"
                 Price="15.99"
                 Subscription="Spotify"
@@ -48,6 +52,7 @@
                 Discount="$1.40 (-10%)"
                 Hex="#00A8E1"
                 Icon="amazon_prime.png"
+                Id="8ecfbd9d-9515-4c98-a3b9-8bfc12e311fd"
                 IsDiscountApplied="False"
                 IsPaid="True"
                 Price="13.99"
@@ -59,6 +64,7 @@
                 Discount="$1.30 (-10%)"
                 Hex="#E50914"
                 Icon="netflix.png"
+                Id="5d442a00-1c38-4cfc-82ac-f7f2c2666dad"
                 IsDiscountApplied="True"
                 IsPaid="True"
                 Price="12.99"
@@ -70,6 +76,7 @@
                 Discount="$1.10 (-10%)"
                 Hex="#113CCF"
                 Icon="disney_plus.jpg"
+                Id="fa8daf30-0d3f-41f8-951b-7b34871257f4"
                 IsDiscountApplied="False"
                 IsPaid="True"
                 Price="10.99"
@@ -81,6 +88,7 @@
                 Discount="$0.90 (-10%)"
                 Hex="#F47521"
                 Icon="crunchyroll.jpg"
+                Id="7f2c7d3b-2bbd-4eec-89df-d098a5a700db"
                 IsDiscountApplied="True"
                 IsPaid="False"
                 Price="8.99"
@@ -92,6 +100,7 @@
                 Discount="$0.80 (-10%)"
                 Hex="#5A2D82"
                 Icon="warner_bros.jpg"
+                Id="e7cd7a94-51b8-496f-915b-54a8ad0c9c12"
                 IsDiscountApplied="False"
                 IsPaid="True"
                 Price="7.99"
@@ -103,6 +112,7 @@
                 Discount="$0.70 (-10%)"
                 Hex="#673AB7"
                 Icon="hostinger.jpg"
+                Id="b82a381b-ac97-45fa-af3a-829a2ea129f2"
                 IsDiscountApplied="True"
                 IsPaid="True"
                 Price="6.99"
@@ -114,6 +124,7 @@
                 Discount="$0.60 (-10%)"
                 Hex="#333333"
                 Icon="github.png"
+                Id="d7fdd751-b830-48e5-8196-e99e82c5d42b"
                 IsDiscountApplied="False"
                 IsPaid="True"
                 Price="5.99"
@@ -125,6 +136,7 @@
                 Discount="$0.50 (-10%)"
                 Hex="#512BD4"
                 Icon="dotnet_bot.png"
+                Id="f3a2da1b-6018-4c80-b147-9dd7f75f40b8"
                 IsDiscountApplied="True"
                 IsPaid="True"
                 Price="4.99"
@@ -136,6 +148,7 @@
                 Discount="$0.40 (-10%)"
                 Hex="#0078D4"
                 Icon="onedrive.png"
+                Id="cb628193-c39a-42eb-8cd1-ea5fb9e858d7"
                 IsDiscountApplied="False"
                 IsPaid="True"
                 Price="3.99"
@@ -147,6 +160,7 @@
                 Discount="$0.30 (-10%)"
                 Hex="#008AD7"
                 Icon="azure.png"
+                Id="bee1cbe1-0169-4511-8b5f-0c0832a64e7f"
                 IsDiscountApplied="True"
                 IsPaid="False"
                 Price="2.99"
@@ -158,6 +172,7 @@
                 Discount="$0.20 (-10%)"
                 Hex="#232F3E"
                 Icon="aws.png"
+                Id="4ed93f3c-ea07-4d83-8304-bd1c62962777"
                 IsDiscountApplied="False"
                 IsPaid="True"
                 Price="1.99"
@@ -200,43 +215,46 @@
         <local:USDToVNDConverter x:Key="USDToVNDConverter" />
         <local:TextDecorationsConverter x:Key="TextDecorationsConverter" />
         <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        <toolkit:IsNullConverter x:Key="IsNullConverter" />
+        <toolkit:IsNotNullConverter x:Key="IsNotNullConverter" />
 
     </ContentPage.Resources>
-
 
     <Grid Padding="16" RowSpacing="16">
         <CollectionView
             x:Name="MainList"
-            ItemsSource="{StaticResource AppUsages}"
+            ItemsSource="{Binding AppUsages}"
             SelectionChanged="CollectionView_SelectionChanged"
             SelectionMode="Single">
             <CollectionView.Header>
                 <Border
                     Grid.Row="1"
                     Padding="16"
-                    BackgroundColor="#ffffff"
+                    BackgroundColor="#171717"
                     MaximumHeightRequest="800"
+                    Stroke="#fafafa"
                     StrokeShape="RoundRectangle 8"
-                    StrokeThickness="0">
+                    StrokeThickness="0.5">
                     <VerticalStackLayout Spacing="8">
 
                         <Label
                             FontAttributes="Bold"
                             FontSize="Subtitle"
                             HorizontalOptions="Center"
-                            Text="NOVEMBER"
+                            Text="{Binding Month}"
+                            TextColor="White"
                             TextDecorations="Underline" />
                         <syncfusionToolkit:SfCircularChart>
                             <syncfusionToolkit:PieSeries
                                 EnableAnimation="True"
                                 EnableTooltip="True"
                                 IsVisibleOnLegend="True"
-                                ItemsSource="{x:StaticResource AppUsages}"
-                                PaletteBrushes="{StaticResource CustomBrushes}"
+                                ItemsSource="{Binding ChartSlices}"
+                                PaletteBrushes="{Binding CustomBrushes}"
                                 Radius="1"
                                 ShowDataLabels="True"
                                 XBindingPath="Subscription"
-                                YBindingPath="UsagePercent">
+                                YBindingPath="Price">
 
                                 <syncfusionToolkit:PieSeries.LabelTemplate>
                                     <DataTemplate>
@@ -244,42 +262,45 @@
                                             <Label
                                                 FontSize="10"
                                                 Text="{Binding Item.Subscription}"
-                                                TextColor="Black" />
+                                                TextColor="#fafafa" />
                                             <Label
                                                 FontSize="10"
                                                 Text=" : "
-                                                TextColor="Black" />
+                                                TextColor="#fafafa" />
                                             <Label
                                                 FontSize="10"
-                                                Text="{Binding Item.Price, StringFormat='{0:C}'}"
-                                                TextColor="Black" />
+                                                Text="{Binding Item.Price, StringFormat='{0:N0}₫'}"
+                                                TextColor="#fafafa" />
                                         </HorizontalStackLayout>
                                     </DataTemplate>
                                 </syncfusionToolkit:PieSeries.LabelTemplate>
+
+
 
                                 <syncfusionToolkit:PieSeries.DataLabelSettings>
                                     <syncfusionToolkit:CircularDataLabelSettings LabelPosition="Inside" SmartLabelAlignment="Shift" />
                                 </syncfusionToolkit:PieSeries.DataLabelSettings>
                             </syncfusionToolkit:PieSeries>
                             <syncfusionToolkit:SfCircularChart.Legend>
-                                <syncfusionToolkit:ChartLegend />
+                                <syncfusionToolkit:ChartLegend>
+                                    <syncfusionToolkit:ChartLegend.LabelStyle>
+                                        <syncfusionToolkit:ChartLegendLabelStyle TextColor="White" />
+                                    </syncfusionToolkit:ChartLegend.LabelStyle>
+                                </syncfusionToolkit:ChartLegend>
                             </syncfusionToolkit:SfCircularChart.Legend>
                         </syncfusionToolkit:SfCircularChart>
-                        <Label HorizontalOptions="Center">
-                            <Label.FormattedText>
-                                <FormattedString>
-                                    <Span
-                                        FontAttributes="Bold"
-                                        Text="{Binding Source={StaticResource AppUsages}, Converter={StaticResource SumPriceConverter}, StringFormat='Total: {0:C}'}"
-                                        TextColor="Black" />
-                                    <Span Text=" - " TextColor="Black" />
-                                    <Span
-                                        Text="{Binding Source={StaticResource AppUsages}, Converter={StaticResource USDToVNDConverter}}"
-                                        TextColor="Black"
-                                        TextDecorations="Underline" />
-                                </FormattedString>
-                            </Label.FormattedText>
-                        </Label>
+                        <Label
+                            FontAttributes="Bold"
+                            HorizontalOptions="Center"
+                            Text="{Binding TotalPrice, StringFormat='Total: {0:N0}₫'}"
+                            TextColor="#fafafa" />
+                        <syncfusionToolkit:SfButton
+                            x:Name="AddButton"
+                            Background="#2b2b2b"
+                            Clicked="AddButton_Clicked"
+                            CornerRadius="4"
+                            Text="Add"
+                            TextColor="White" />
                     </VerticalStackLayout>
                 </Border>
             </CollectionView.Header>
@@ -293,9 +314,10 @@
                 <DataTemplate>
                     <Border
                         Padding="16"
-                        BackgroundColor="#ffffff"
+                        BackgroundColor="#171717"
+                        Stroke="#fafafa"
                         StrokeShape="RoundRectangle 8"
-                        StrokeThickness="0">
+                        StrokeThickness="0.5">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -312,7 +334,7 @@
                                 <BoxView
                                     BackgroundColor="{Binding Hex}"
                                     CornerRadius="2"
-                                    HeightRequest="12"
+                                    HeightRequest="6"
                                     WidthRequest="86" />
                             </VerticalStackLayout>
                             <VerticalStackLayout
@@ -324,10 +346,12 @@
                                     FontAttributes="Bold"
                                     FontSize="14"
                                     Text="{Binding Company}"
+                                    TextColor="#fafafa"
                                     VerticalOptions="Center" />
                                 <Label
                                     FontSize="12"
                                     Text="{Binding Subscription}"
+                                    TextColor="#fafafa"
                                     VerticalOptions="Center" />
                             </VerticalStackLayout>
                             <Grid Grid.Column="2">
@@ -335,65 +359,67 @@
                                     FontAttributes="Bold"
                                     FontSize="14"
                                     HorizontalOptions="End"
-                                    Text="{Binding Price, StringFormat='{0:C}'}"
+                                    Text="{Binding Price, StringFormat='{0:N0}₫'}"
+                                    TextColor="#fafafa"
                                     TextDecorations="{Binding IsDiscountApplied, Converter={StaticResource TextDecorationsConverter}}" />
-
                                 <Label
                                     HorizontalOptions="End"
                                     Text="{Binding Discount}"
+                                    TextColor="#fafafa"
                                     VerticalOptions="Center" />
 
                                 <HorizontalStackLayout Spacing="8" VerticalOptions="End">
 
                                     <Border
                                         Padding="4,2,4,2"
-                                        BackgroundColor="#fff7ed"
+                                        BackgroundColor="#292929"
                                         IsVisible="{Binding IsDiscountApplied}"
-                                        Stroke="#a87b4d"
+                                        Stroke="#292929"
                                         StrokeShape="RoundRectangle 4">
                                         <Label
                                             FontSize="11"
                                             Text="Discount applied"
-                                            TextColor="#a87b4d"
+                                            TextColor="#fafafa"
                                             VerticalOptions="Center" />
                                     </Border>
 
                                     <Border
                                         Padding="4,2,4,2"
-                                        BackgroundColor="#4169e1"
-                                        IsVisible="{Binding IsDiscountApplied, Converter={StaticResource InvertedBoolConverter}}"
-                                        Stroke="White"
+                                        BackgroundColor="#292929"
+                                        IsVisible="{Binding IsDiscountAvailable}"
+                                        Stroke="#292929"
                                         StrokeShape="RoundRectangle 4">
                                         <Label
                                             FontSize="11"
                                             Text="Discount available"
-                                            TextColor="White"
+                                            TextColor="#fafafa"
                                             VerticalOptions="Center" />
                                     </Border>
 
                                     <Border
                                         Padding="4,2,4,2"
-                                        BackgroundColor="#f0fdf4"
+                                        BackgroundColor="#292929"
                                         IsVisible="{Binding IsPaid}"
+                                        Stroke="#292929"
                                         StrokeShape="RoundRectangle 4">
                                         <Label
                                             FontSize="11"
                                             Text="Paid"
-                                            TextColor="#278236"
+                                            TextColor="#fafafa"
                                             VerticalOptions="Center" />
                                     </Border>
 
                                     <Border
                                         Padding="4,2,4,2"
-                                        BackgroundColor="#e0e5eb"
+                                        BackgroundColor="#292929"
+                                        Stroke="#292929"
                                         StrokeShape="RoundRectangle 4">
 
-                                        <Label FontSize="11">
+                                        <Label FontSize="11" TextColor="#fafafa">
                                             <Label.FormattedText>
                                                 <FormattedString>
                                                     <Span Text="{Binding DayLeft}" />
                                                     <Span Text=" " />
-                                                    <Span Text="days left" />
                                                 </FormattedString>
                                             </Label.FormattedText>
                                         </Label>

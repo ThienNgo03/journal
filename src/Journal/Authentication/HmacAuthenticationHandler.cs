@@ -44,7 +44,7 @@ public class HmacAuthenticationHandler : AuthenticationHandler<AuthenticationSch
 
         _cache.Set(nonceKey, true, TimeSpan.FromMinutes(5));
 
-        var message = secretKey + timestamp + nonce;
+        var message = timestamp + nonce;
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secretKey));
         var computedHash = BitConverter.ToString(hmac.ComputeHash(Encoding.UTF8.GetBytes(message))).Replace("-", "").ToLower();
 

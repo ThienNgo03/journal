@@ -14,7 +14,7 @@ public class Service
 
     public string ComputeHash(string timestamp, string nonce)
     {
-        string message = secretKey + timestamp + nonce;
+        string message = timestamp + nonce;
         return ComputeHmacSha256(message, secretKey);
     }
 
