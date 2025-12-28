@@ -162,11 +162,6 @@ public class Mapper: IMapper
 
     public void SetUsagePercent(List<AppUsage> items)
     {
-        //set usage percent using faker
-        foreach (var item in items)
-        {
-            item.UsagePercent = faker.Random.Double(0, 100);
-        }
     }
 
     public void SetCustomBrush(List<string> pallete, List<AppUsage> items)

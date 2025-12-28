@@ -1,15 +1,18 @@
 ﻿using BFF.Authentication.Register;
 using BFF.Subscriptions.All;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Azure;
 using Newtonsoft.Json;
 using Spectre.Console.Rendering;
+using System.Globalization;
 
 namespace BFF.Subscriptions;
 
 [Route("api/subscriptions")]
 [ApiController]
+[Authorize]
 public class Controller : ControllerBase
 {
     private readonly IMapper _mapper;
@@ -127,7 +130,6 @@ public class Controller : ControllerBase
             subscriptionByUserIdsResponse = await _subscriptionByUserIds.GetAsync(new() { UserId = userId });
             subscriptionByUserIds = subscriptionByUserIdsResponse.Content;
         }
-        var monthTotalPrice = subscriptions.Where(sub => sub.RenewalDate.Month - 1 == DateTime.UtcNow.Month).Select(sub => sub.Price).Sum() + subscriptionByUserIds.Where(sub => sub.RenewalDate.Month - 1 == DateTime.UtcNow.Month).Select(sub => sub.Price).Sum();
         Item item = new Item{};
         item.AppUsages = subscriptions.Select(sub => new AppUsage()
         {
@@ -136,9 +138,6 @@ public class Controller : ControllerBase
             Company = providers.FirstOrDefault(pr => pr.Id == packages.FirstOrDefault(pa => pa.Id == sub.PackageId).ProviderId).Name,
             Icon = providers.FirstOrDefault(pr => pr.Id == packages.FirstOrDefault(pa => pa.Id == sub.PackageId).ProviderId).IconUrl,
             Subscription = packages.FirstOrDefault(pa => pa.Id == sub.PackageId).Name,
-            UsagePercent = (sub.RenewalDate.Month - 1 == DateTime.UtcNow.Month) ? 
-                               (double)((sub.Price / monthTotalPrice)*100) :
-                               0,
             Price = sub.Price,
             Currency = sub.Currency,
             Discount = null,
@@ -149,7 +148,13 @@ public class Controller : ControllerBase
             IsDiscountApplied = null,
             IsDiscountAvailable = null
         }).ToList();
-        item.CustomBrush = subscriptions.Select(sub => sub.ChartColor).ToList();
+        item.CustomBrushes = subscriptions.Where(sub => sub.RenewalDate.Month == DateTime.UtcNow.AddMonths(1).Month).ToList().Select(sub => sub.ChartColor).ToList();
+
+        item.ChartSlices = subscriptions.Where(sub => sub.RenewalDate.Month == DateTime.UtcNow.AddMonths(1).Month).ToList().Select(sub => new ChartSlice()
+        {
+            Price = sub.Price,
+            Subscription = packages.FirstOrDefault(pa => pa.Id == sub.PackageId).Name,
+        }).ToList();
 
         Item tempItem = new Item();
         tempItem.AppUsages = subscriptionByUserIds.Select(sub => new AppUsage()
@@ -159,9 +164,6 @@ public class Controller : ControllerBase
             Company = sub.CompanyName,
             Icon = "dotnet_bot.png",
             Subscription = sub.SubscriptionPlan,
-            UsagePercent = (sub.RenewalDate.Month - 1 == DateTime.UtcNow.Month) ?
-                               (double)((sub.Price / monthTotalPrice) * 100) :
-                               0,
             Price = sub.Price,
             Currency = sub.Currency,
             Discount = null,
@@ -172,13 +174,22 @@ public class Controller : ControllerBase
             IsDiscountApplied = null,
             IsDiscountAvailable = null
         }).ToList();
-        tempItem.CustomBrush = subscriptionByUserIds.Select(sub => sub.ChartColor).ToList();
+        tempItem.CustomBrushes = subscriptionByUserIds.Where(sub => sub.RenewalDate.Month == DateTime.UtcNow.AddMonths(1).Month).ToList().Select(sub => sub.ChartColor).ToList();
+
+        tempItem.ChartSlices = subscriptionByUserIds.Where(sub => sub.RenewalDate.Month == DateTime.UtcNow.AddMonths(1).Month).ToList().Select(sub => new ChartSlice()
+        {
+            Price = sub.Price,
+            Subscription = sub.SubscriptionPlan,
+        }).ToList();
+
 
         Item fullItem = new Item()
         {
-            Month = DateTime.UtcNow.Month.ToString(),
+            Month = DateTime.UtcNow.ToString("MMMM", new CultureInfo("en-US")),
             AppUsages = item.AppUsages.Concat(tempItem.AppUsages).ToList(),
-            CustomBrush = item.CustomBrush.Concat(tempItem.CustomBrush).ToList()
+            TotalPrice = subscriptions.Where(sub => sub.RenewalDate.Month == DateTime.UtcNow.AddMonths(1).Month).Select(sub => sub.Price).Sum() + subscriptionByUserIds.Where(sub => sub.RenewalDate.Month == DateTime.UtcNow.AddMonths(1).Month).Select(sub => sub.Price).Sum(),
+            ChartSlices = item.ChartSlices.Concat(tempItem.ChartSlices).ToList(),
+            CustomBrushes = item.CustomBrushes.Concat(tempItem.CustomBrushes).ToList()
         };
 
 
@@ -209,157 +220,30 @@ public class Controller : ControllerBase
         return Ok(fullItem);
     }
 
-    [HttpPost("create")]
-    public async Task<IActionResult> Create([FromBody] Create.Payload payload)
-    {
-        var providersResponse = await _providers.GetAsync(new() { Name = payload.Company });
-        Guid? providerId = providersResponse.Content.Items.FirstOrDefault()?.Id;
-        var packagesResponse = await _packages.GetAsync(new() { Name = payload.Subscription, ProviderId = providerId });
-        Guid? packageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == payload.Subscription && x.ProviderId == providerId)?.Id;
-        bool isTempSubscription = !providerId.HasValue || !packageId.HasValue;
+    //[HttpDelete("delete")]
+    //public async Task<IActionResult> Delete([FromQuery] Delete.Parameters parameters)
+    //{
+    //    Guid? userId = Guid.TryParse(parameters.UserId, out Guid uId) ? uId : null;
+    //    Guid? subscriptionId = Guid.TryParse(parameters.Id, out Guid id) ? id : null;
+    //    var providersResponse = await _providers.GetAsync(new() { Name = parameters.CompanyName});
+    //    Guid? providerId = providersResponse.Content.Items.FirstOrDefault()?.Id;
+    //    var packagesResponse = await _packages.GetAsync(new() { Name = parameters.SubscriptionPlan, ProviderId = providerId });
+    //    Guid? packageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == parameters.SubscriptionPlan && x.ProviderId == providerId)?.Id;
 
-        if (isTempSubscription)
-        {
-            await _subscriptionByUserIds.PostAsync(new()
-            {
-                UserId = Guid.Parse(payload.UserId),
-                CompanyName = payload.Company,
-                SubscriptionPlan = payload.Subscription,
-                Price = payload.Price,
-                Currency = payload.Currency,
-                ChartColor = payload.Hex,
-                RenewalDate = payload.RenewalDate,
-                IsRecursive = payload.IsRecursive,
-            });
-            return Created("", "temp-subscription-created");
-        }
-        await _subscriptions.PostAsync(new()
-        {
-            UserId = Guid.Parse(payload.UserId),
-            PackageId = packageId.Value,
-            Price = payload.Price,
-            Currency = payload.Currency,
-            ChartColor = payload.Hex,
-            RenewalDate = payload.RenewalDate,
-            IsRecursive = payload.IsRecursive,
-        });
-        return Created("", "subscription-created");
-    }
-
-    [HttpPut("Update")]
-    public async Task<IActionResult> Update([FromBody] Put.Payload payload)
-    {
-        Guid? userId = Guid.TryParse(payload.UserId, out Guid uId) ? uId : null;
-        Guid? subscriptionId = Guid.TryParse(payload.Id, out Guid id) ? id : null;
-
-        var providersResponse = await _providers.GetAsync(new() { Name = payload.OldCompany });
-        Guid? oldProviderId = providersResponse.Content.Items.FirstOrDefault()?.Id;
-        var packagesResponse = await _packages.GetAsync(new() { Name = payload.OldSubscription, ProviderId = oldProviderId });
-        Guid? oldPackageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == payload.OldSubscription && x.ProviderId == oldProviderId)?.Id;
-
-        providersResponse = await _providers.GetAsync(new() { Name = payload.NewCompany });
-        Guid? newProviderId = providersResponse.Content.Items.FirstOrDefault()?.Id;
-        packagesResponse = await _packages.GetAsync(new() { Name = payload.NewSubscription, ProviderId = newProviderId });
-        Guid? newPackageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == payload.NewSubscription && x.ProviderId == newProviderId)?.Id;
-
-        if (oldPackageId != null && newPackageId != null)
-        {
-            await _subscriptions.PutAsync(new()
-            {
-                Id = subscriptionId.Value,
-                UserId = userId.Value,
-                PackageId = newPackageId.Value,
-                Price = payload.Price,
-                Currency = payload.Currency,
-                ChartColor = payload.Hex,
-                RenewalDate = payload.RenewalDate,
-                IsRecursive = payload.IsRecursive,
-            });
-            return NoContent();
-        }
-        if (oldPackageId == null && newPackageId == null)
-        {
-            await _subscriptionByUserIds.PutAsync(new()
-            {
-                Id = subscriptionId.Value,
-                OldUserId = userId.Value,
-                OldSubscriptionPlan = payload.OldSubscription,
-                OldCompanyName = payload.OldCompany,
-                NewUserId = userId.Value,
-                NewSubscriptionPlan = payload.NewSubscription,
-                NewCompanyName = payload.NewCompany,
-                Price = payload.Price,
-                Currency = payload.Currency,
-                ChartColor = payload.Hex,
-                RenewalDate = payload.RenewalDate,
-                IsRecursive = payload.IsRecursive,
-            });
-            return NoContent();
-        }
-        
-        if (oldPackageId != null && newPackageId == null)
-        {
-            await _subscriptions.DeleteAsync(new() { Id = subscriptionId.Value });
-            await _subscriptionByUserIds.PostAsync(new()
-            {
-                UserId = userId.Value,
-                SubscriptionPlan = payload.NewSubscription,
-                CompanyName = payload.NewCompany,
-                Price = payload.Price,
-                Currency = payload.Currency,
-                ChartColor = payload.Hex,
-                RenewalDate = payload.RenewalDate,
-                IsRecursive = payload.IsRecursive,
-            });
-            return NoContent();
-        }
-        if (oldPackageId == null && newPackageId != null)
-        {
-            await _subscriptionByUserIds.DeleteAsync(new()
-            {
-                UserId = userId.Value,
-                SubscriptionPlan = payload.OldSubscription,
-                CompanyName= payload.OldCompany
-            });
-            await _subscriptions.PostAsync(new()
-            {
-                UserId = userId.Value,
-                PackageId = newPackageId.Value,
-                Price = payload.Price,
-                Currency = payload.Currency,
-                ChartColor = payload.Hex,
-                RenewalDate = payload.RenewalDate,
-                IsRecursive = payload.IsRecursive,
-            });
-            return NoContent();
-        }
-        return NoContent();
-    }
-
-    [HttpDelete("delete")]
-    public async Task<IActionResult> Delete([FromQuery] Delete.Parameters parameters)
-    {
-        Guid? userId = Guid.TryParse(parameters.UserId, out Guid uId) ? uId : null;
-        Guid? subscriptionId = Guid.TryParse(parameters.Id, out Guid id) ? id : null;
-        var providersResponse = await _providers.GetAsync(new() { Name = parameters.CompanyName});
-        Guid? providerId = providersResponse.Content.Items.FirstOrDefault()?.Id;
-        var packagesResponse = await _packages.GetAsync(new() { Name = parameters.SubscriptionPlan, ProviderId = providerId });
-        Guid? packageId = packagesResponse.Content.Items.FirstOrDefault(x => x.Name == parameters.SubscriptionPlan && x.ProviderId == providerId)?.Id;
-
-        if (providerId.HasValue && packageId.HasValue)
-        {
-            if (!subscriptionId.HasValue)
-            {
-                Console.WriteLine("Null Subscription Id.");
-                return NoContent();
-            }
-            await _subscriptions.DeleteAsync(new()
-            {
-                Id = subscriptionId.Value,
-            });
-            return NoContent();
-        }
-        await _subscriptionByUserIds.DeleteAsync(new() { UserId = userId.Value, SubscriptionPlan = parameters.SubscriptionPlan, CompanyName = parameters.CompanyName });
-        return NoContent();
-    }
+    //    if (providerId.HasValue && packageId.HasValue)
+    //    {
+    //        if (!subscriptionId.HasValue)
+    //        {
+    //            Console.WriteLine("Null Subscription Id.");
+    //            return NoContent();
+    //        }
+    //        await _subscriptions.DeleteAsync(new()
+    //        {
+    //            Id = subscriptionId.Value,
+    //        });
+    //        return NoContent();
+    //    }
+    //    await _subscriptionByUserIds.DeleteAsync(new() { UserId = userId.Value, SubscriptionPlan = parameters.SubscriptionPlan, CompanyName = parameters.CompanyName });
+    //    return NoContent();
+    //}
 }
