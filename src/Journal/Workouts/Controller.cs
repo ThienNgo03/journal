@@ -5,6 +5,7 @@ namespace Journal.Workouts;
 
 [ApiController]
 [Authorize]
+[AllowAnonymous]
 [Route("api/workouts")]
 public class Controller : ControllerBase
 {
@@ -32,164 +33,290 @@ public class Controller : ControllerBase
     {
         List<Get.Response> responses = new();
         int totalCount = 0;
+        bool useMongoDb = false;
 
-        // ===== ALWAYS USE SQL FOR MAIN QUERY =====
-        var query = _context.Workouts.AsQueryable();
-        var all = query;
-
-        // Handle Ids parameter
-        if (!string.IsNullOrEmpty(parameters.Ids))
+        // Parse includes if exists
+        List<string> includes = new();
+        bool hasInclude = !string.IsNullOrEmpty(parameters.Include);
+        if (hasInclude)
         {
-            var ids = parameters.Ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : (Guid?)null)
-                .Where(guid => guid.HasValue)
-                .Select(guid => guid.Value)
-                .ToList();
-            query = query.Where(x => ids.Contains(x.Id));
+            includes = parameters.Include.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                         .Select(i => i.Trim().ToLower())
+                                         .ToList();
         }
 
-        // Apply filters
-        if (parameters.ExerciseId.HasValue)
-            query = query.Where(x => x.ExerciseId == parameters.ExerciseId);
-
-        if (parameters.UserId.HasValue)
-            query = query.Where(x => x.UserId == parameters.UserId);
-
-        if (parameters.CreatedDate.HasValue)
-            query = query.Where(x => x.CreatedDate == parameters.CreatedDate);
-
-        if (parameters.LastUpdated.HasValue)
-            query = query.Where(x => x.LastUpdated == parameters.LastUpdated);
-
-        // Apply sorting
-        if (!string.IsNullOrEmpty(parameters.SortBy))
+        // ===== TRY MONGODB FIRST (ONLY IF INCLUDE EXISTS) =====
+        if (hasInclude)
         {
-            var sortBy = typeof(Table)
-                .GetProperties()
-                .FirstOrDefault(p => p.Name.Equals(parameters.SortBy, StringComparison.OrdinalIgnoreCase))
-                ?.Name;
-            if (sortBy != null)
+            try
             {
-                query = parameters.SortOrder?.ToLower() == "desc"
-                    ? query.OrderByDescending(x => EF.Property<object>(x, sortBy))
-                    : query.OrderBy(x => EF.Property<object>(x, sortBy));
+                Console.WriteLine("Attempting to use MongoDB...");
+
+                var mongoTask = Task.Run(async () =>
+                {
+                    var mongoQuery = _mongoDbContext.Workouts.AsQueryable();
+
+                    // Handle Ids parameter
+                    if (!string.IsNullOrEmpty(parameters.Ids))
+                    {
+                        var ids = parameters.Ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : (Guid?)null)
+                            .Where(guid => guid.HasValue)
+                            .Select(guid => guid.Value)
+                            .ToList();
+                        mongoQuery = mongoQuery.Where(x => ids.Contains(x.Id));
+                    }
+
+                    // Apply filters
+                    if (parameters.ExerciseId.HasValue)
+                        mongoQuery = mongoQuery.Where(x => x.ExerciseId == parameters.ExerciseId);
+
+                    if (parameters.UserId.HasValue)
+                        mongoQuery = mongoQuery.Where(x => x.UserId == parameters.UserId);
+
+                    if (parameters.CreatedDate.HasValue)
+                        mongoQuery = mongoQuery.Where(x => x.CreatedDate == parameters.CreatedDate);
+
+                    if (parameters.LastUpdated.HasValue)
+                        mongoQuery = mongoQuery.Where(x => x.LastUpdated == parameters.LastUpdated);
+
+                    // Apply sorting
+                    if (!string.IsNullOrEmpty(parameters.SortBy))
+                    {
+                        var sortBy = typeof(Databases.MongoDb.Collections.Workout.Collection)
+                            .GetProperties()
+                            .FirstOrDefault(p => p.Name.Equals(parameters.SortBy, StringComparison.OrdinalIgnoreCase))
+                            ?.Name;
+
+                        if (sortBy != null)
+                        {
+                            mongoQuery = parameters.SortOrder?.ToLower() == "desc"
+                                ? mongoQuery.OrderByDescending(x => EF.Property<object>(x, sortBy))
+                                : mongoQuery.OrderBy(x => EF.Property<object>(x, sortBy));
+                        }
+                    }
+
+                    // Get total count before pagination
+                    var count = await mongoQuery.CountAsync();
+
+                    // Apply pagination
+                    if (parameters.PageSize.HasValue && parameters.PageIndex.HasValue &&
+                        parameters.PageSize > 0 && parameters.PageIndex >= 0)
+                    {
+                        mongoQuery = mongoQuery.Skip(parameters.PageIndex.Value * parameters.PageSize.Value)
+                                               .Take(parameters.PageSize.Value);
+                    }
+
+                    var result = await mongoQuery.ToListAsync();
+
+                    return new { TotalCount = count, Data = result };
+                });
+
+                // Wait for MongoDB with 3 second timeout
+                if (await Task.WhenAny(mongoTask, Task.Delay(3000)) == mongoTask)
+                {
+                    var mongoResult = await mongoTask;
+                    totalCount = mongoResult.TotalCount;
+
+                    // Map MongoDB data to responses (1:1 mapping with includes)
+                    foreach (var workout in mongoResult.Data)
+                    {
+                        var response = new Get.Response
+                        {
+                            Id = workout.Id,
+                            ExerciseId = workout.ExerciseId,
+                            UserId = workout.UserId,
+                            CreatedDate = workout.CreatedDate,
+                            LastUpdated = workout.LastUpdated,
+                            Exercise = null,
+                            WeekPlans = null
+                        };
+
+                        // Handle Exercise include
+                        var exerciseInclude = includes.FirstOrDefault(i => i.StartsWith("exercise"));
+                        if (exerciseInclude != null && workout.Exercise != null)
+                        {
+                            var exerciseIncludeParts = exerciseInclude.Split(".");
+                            response.Exercise = new Get.Exercise
+                            {
+                                Id = workout.Exercise.Id,
+                                Name = workout.Exercise.Name,
+                                Description = workout.Exercise.Description,
+                                Type = workout.Exercise.Type,
+                                CreatedDate = workout.Exercise.CreatedDate,
+                                LastUpdated = workout.Exercise.LastUpdated,
+                                Muscles = null
+                            };
+
+                            // Handle exercise.muscles
+                            if (exerciseIncludeParts.Length > 1 && exerciseIncludeParts[1] == "muscles" &&
+                                workout.Exercise.Muscles != null && workout.Exercise.Muscles.Any())
+                            {
+                                response.Exercise.Muscles = workout.Exercise.Muscles.Select(m => new Get.Muscle
+                                {
+                                    Id = m.Id,
+                                    Name = m.Name,
+                                    CreatedDate = m.CreatedDate,
+                                    LastUpdated = m.LastUpdated
+                                }).ToList();
+                            }
+                        }
+
+                        // Handle WeekPlans include
+                        var weekPlansInclude = includes.FirstOrDefault(i => i.StartsWith("weekplans"));
+                        if (weekPlansInclude != null && workout.WeekPlans != null && workout.WeekPlans.Any())
+                        {
+                            var weekPlansIncludeParts = weekPlansInclude.Split(".");
+                            response.WeekPlans = new List<Get.WeekPlan>();
+
+                            foreach (var wp in workout.WeekPlans)
+                            {
+                                var weekPlan = new Get.WeekPlan
+                                {
+                                    Id = wp.Id,
+                                    DateOfWeek = wp.DateOfWeek,
+                                    Time = wp.Time,
+                                    WorkoutId = wp.WorkoutId,
+                                    CreatedDate = wp.CreatedDate,
+                                    LastUpdated = wp.LastUpdated,
+                                    WeekPlanSets = null
+                                };
+
+                                // Handle weekplans.weekplansets
+                                if (weekPlansIncludeParts.Length > 1 && weekPlansIncludeParts[1] == "weekplansets" &&
+                                    wp.WeekPlanSets != null && wp.WeekPlanSets.Any())
+                                {
+                                    weekPlan.WeekPlanSets = wp.WeekPlanSets.Select(wps => new Get.WeekPlanSet
+                                    {
+                                        Id = wps.Id,
+                                        Value = wps.Value,
+                                        WeekPlanId = wps.WeekPlanId,
+                                        CreatedById = wps.CreatedById,
+                                        UpdatedById = wps.UpdatedById,
+                                        LastUpdated = wps.LastUpdated,
+                                        CreatedDate = wps.CreatedDate
+                                    }).ToList();
+                                }
+
+                                response.WeekPlans.Add(weekPlan);
+                            }
+                        }
+
+                        responses.Add(response);
+                    }
+
+                    useMongoDb = true;
+                    Console.WriteLine($"✓ Successfully fetched {responses.Count} workouts from MongoDB");
+                }
+                else
+                {
+                    Console.WriteLine("✗ MongoDB timeout (3s exceeded), falling back to SQL");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"✗ MongoDB failed: {ex.Message}, falling back to SQL");
             }
         }
-
-        // Get total count before pagination
-        totalCount = await all.CountAsync();
-
-        // Apply pagination
-        if (parameters.PageSize.HasValue && parameters.PageIndex.HasValue && parameters.PageSize > 0 && parameters.PageIndex >= 0)
-            query = query.Skip(parameters.PageIndex.Value * parameters.PageSize.Value).Take(parameters.PageSize.Value);
-
-        var result = await query.AsNoTracking().ToListAsync();
-
-        // Build base responses
-        responses = result.Select(workout => new Get.Response
+        else
         {
-            Id = workout.Id,
-            ExerciseId = workout.ExerciseId,
-            UserId = workout.UserId,
-            CreatedDate = workout.CreatedDate,
-            LastUpdated = workout.LastUpdated,
-            Exercise = null,
-            WeekPlans = null
-        }).ToList();
+            Console.WriteLine("No include parameter, using SQL directly...");
+        }
 
-        Console.WriteLine($"Successfully fetched {responses.Count} workouts from SQL");
-
-        // ===== USE MONGODB FOR NESTED DATA (INCLUDE) =====
-        if (!string.IsNullOrEmpty(parameters.Include))
+        // ===== FALLBACK TO SQL =====
+        if (!useMongoDb)
         {
-            var includes = parameters.Include.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                 .Select(i => i.Trim().ToLower())
-                                 .ToList();
+            Console.WriteLine("Using SQL for filtering and data retrieval...");
 
-            var workoutIds = responses.Select(w => w.Id).ToList();
+            var sqlQuery = _context.Workouts.AsQueryable();
+            var allQuery = sqlQuery;
 
-            foreach (var inc in includes)
+            // Handle Ids parameter
+            if (!string.IsNullOrEmpty(parameters.Ids))
             {
-                var includeParts = inc.Split(".");
-                var mainInclude = includeParts[0];
+                var ids = parameters.Ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : (Guid?)null)
+                    .Where(guid => guid.HasValue)
+                    .Select(guid => guid.Value)
+                    .ToList();
+                sqlQuery = sqlQuery.Where(x => ids.Contains(x.Id));
+            }
 
-                if (mainInclude == "exercise")
+            // Apply filters
+            if (parameters.ExerciseId.HasValue)
+                sqlQuery = sqlQuery.Where(x => x.ExerciseId == parameters.ExerciseId);
+
+            if (parameters.UserId.HasValue)
+                sqlQuery = sqlQuery.Where(x => x.UserId == parameters.UserId);
+
+            if (parameters.CreatedDate.HasValue)
+                sqlQuery = sqlQuery.Where(x => x.CreatedDate == parameters.CreatedDate);
+
+            if (parameters.LastUpdated.HasValue)
+                sqlQuery = sqlQuery.Where(x => x.LastUpdated == parameters.LastUpdated);
+
+            // Apply sorting
+            if (!string.IsNullOrEmpty(parameters.SortBy))
+            {
+                var sortBy = typeof(Table)
+                    .GetProperties()
+                    .FirstOrDefault(p => p.Name.Equals(parameters.SortBy, StringComparison.OrdinalIgnoreCase))
+                    ?.Name;
+
+                if (sortBy != null)
                 {
-                    bool useMongoForExercise = true;
+                    sqlQuery = parameters.SortOrder?.ToLower() == "desc"
+                        ? sqlQuery.OrderByDescending(x => EF.Property<object>(x, sortBy))
+                        : sqlQuery.OrderBy(x => EF.Property<object>(x, sortBy));
+                }
+            }
 
-                    try
+            // Get total count before pagination
+            totalCount = await allQuery.CountAsync();
+
+            // Apply pagination
+            if (parameters.PageSize.HasValue && parameters.PageIndex.HasValue &&
+                parameters.PageSize > 0 && parameters.PageIndex >= 0)
+            {
+                sqlQuery = sqlQuery.Skip(parameters.PageIndex.Value * parameters.PageSize.Value)
+                                   .Take(parameters.PageSize.Value);
+            }
+
+            var sqlResult = await sqlQuery.AsNoTracking().ToListAsync();
+
+            // Build base responses
+            responses = sqlResult.Select(workout => new Get.Response
+            {
+                Id = workout.Id,
+                ExerciseId = workout.ExerciseId,
+                UserId = workout.UserId,
+                CreatedDate = workout.CreatedDate,
+                LastUpdated = workout.LastUpdated,
+                Exercise = null,
+                WeekPlans = null
+            }).ToList();
+
+            Console.WriteLine($"✓ Successfully fetched {responses.Count} workouts from SQL");
+
+            // If Include exists, fetch nested data from SQL
+            if (includes.Any())
+            {
+                var workoutIds = responses.Select(w => w.Id).ToList();
+
+                foreach (var inc in includes)
+                {
+                    var includeParts = inc.Split(".");
+                    var mainInclude = includeParts[0];
+
+                    if (mainInclude == "exercise")
                     {
-                        // Create a task that will run MongoDB query
-                        var mongoTask = Task.Run(async () =>
-                        {
-                            return await _mongoDbContext.Workouts
-                                .Where(w => workoutIds.Contains(w.Id))
-                                .ToListAsync();
-                        });
-
-                        // Wait for either completion or timeout
-                        if (await Task.WhenAny(mongoTask, Task.Delay(10000)) == mongoTask)
-                        {
-                            // MongoDB completed within timeout
-                            var workoutsWithExercises = await mongoTask;
-                            var workoutDict = workoutsWithExercises.ToDictionary(w => w.Id);
-
-                            foreach (var response in responses)
-                            {
-                                if (workoutDict.TryGetValue(response.Id, out var workoutWithNested) &&
-                                    workoutWithNested.Exercise != null)
-                                {
-                                    response.Exercise = new Get.Exercise
-                                    {
-                                        Id = workoutWithNested.Exercise.Id,
-                                        Name = workoutWithNested.Exercise.Name,
-                                        Description = workoutWithNested.Exercise.Description,
-                                        Type = workoutWithNested.Exercise.Type,
-                                        CreatedDate = workoutWithNested.Exercise.CreatedDate,
-                                        LastUpdated = workoutWithNested.Exercise.LastUpdated,
-                                        Muscles = null
-                                    };
-
-                                    // Handle exercise.muscles
-                                    if (includeParts.Length > 1 && includeParts[1] == "muscles" &&
-                                        workoutWithNested.Exercise.Muscles != null &&
-                                        workoutWithNested.Exercise.Muscles.Any())
-                                    {
-                                        response.Exercise.Muscles = workoutWithNested.Exercise.Muscles.Select(m => new Get.Muscle
-                                        {
-                                            Id = m.Id,
-                                            Name = m.Name,
-                                            CreatedDate = m.CreatedDate,
-                                            LastUpdated = m.LastUpdated
-                                        }).ToList();
-                                    }
-                                }
-                            }
-
-                            Console.WriteLine($"Successfully fetched exercises from MongoDB for {responses.Count} workouts");
-                        }
-                        else
-                        {
-                            // Timeout occurred
-                            Console.WriteLine("MongoDB query timeout (10s exceeded), falling back to SQL");
-                            useMongoForExercise = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"MongoDB failed to fetch exercises, falling back to SQL: {ex.Message}");
-                        useMongoForExercise = false;
-                    }
-
-                    // Fallback to SQL for exercises
-                    if (!useMongoForExercise)
-                    {
-                        var exerciseIds = result.Select(w => w.ExerciseId).Distinct().ToList();
+                        var exerciseIds = sqlResult.Select(w => w.ExerciseId).Distinct().ToList();
                         var exercises = await _context.Exercises
                             .Where(e => exerciseIds.Contains(e.Id))
                             .ToListAsync();
 
                         Dictionary<Guid, List<Get.Muscle>> musclesByExerciseId = new();
+
                         if (includeParts.Length > 1 && includeParts[1] == "muscles")
                         {
                             var exerciseMuscleRelations = await _context.ExerciseMuscles
@@ -197,6 +324,7 @@ public class Controller : ControllerBase
                                 .ToListAsync();
 
                             var muscleIds = exerciseMuscleRelations.Select(em => em.MuscleId).Distinct().ToList();
+
                             if (muscleIds.Any())
                             {
                                 var muscles = await _context.Muscles
@@ -223,6 +351,7 @@ public class Controller : ControllerBase
                         }
 
                         var exerciseDict = exercises.ToDictionary(e => e.Id);
+
                         foreach (var response in responses)
                         {
                             if (exerciseDict.TryGetValue(response.ExerciseId, out var exercise))
@@ -242,91 +371,9 @@ public class Controller : ControllerBase
                             }
                         }
 
-                        Console.WriteLine("Successfully fetched exercises from SQL (fallback)");
+                        Console.WriteLine("  ✓ Fetched exercises from SQL");
                     }
-                }
-                else if (mainInclude == "weekplans")
-                {
-                    bool useMongoForWeekPlans = true;
-
-                    try
-                    {
-                        // Create a task that will run MongoDB query
-                        var mongoTask = Task.Run(async () =>
-                        {
-                            return await _mongoDbContext.Workouts
-                                .Where(w => workoutIds.Contains(w.Id))
-                                .ToListAsync();
-                        });
-
-                        // Wait for either completion or timeout
-                        if (await Task.WhenAny(mongoTask, Task.Delay(10000)) == mongoTask)
-                        {
-                            // MongoDB completed within timeout
-                            var workoutsWithWeekPlans = await mongoTask;
-                            var workoutDict = workoutsWithWeekPlans.ToDictionary(w => w.Id);
-
-                            foreach (var response in responses)
-                            {
-                                if (workoutDict.TryGetValue(response.Id, out var workoutWithNested) &&
-                                    workoutWithNested.WeekPlans != null &&
-                                    workoutWithNested.WeekPlans.Any())
-                                {
-                                    response.WeekPlans = workoutWithNested.WeekPlans.Select(wp => new Get.WeekPlan
-                                    {
-                                        Id = wp.Id,
-                                        DateOfWeek = wp.DateOfWeek,
-                                        Time = wp.Time,
-                                        WorkoutId = wp.WorkoutId,
-                                        CreatedDate = wp.CreatedDate,
-                                        LastUpdated = wp.LastUpdated,
-                                        WeekPlanSets = null
-                                    }).ToList();
-
-                                    // Handle weekplans.weekplansets
-                                    if (includeParts.Length > 1 && includeParts[1] == "weekplansets")
-                                    {
-                                        var weekPlanDict = workoutWithNested.WeekPlans.ToDictionary(wp => wp.Id);
-
-                                        foreach (var responseWeekPlan in response.WeekPlans)
-                                        {
-                                            if (weekPlanDict.TryGetValue(responseWeekPlan.Id, out var mongoWeekPlan) &&
-                                                mongoWeekPlan.WeekPlanSets != null &&
-                                                mongoWeekPlan.WeekPlanSets.Any())
-                                            {
-                                                responseWeekPlan.WeekPlanSets = mongoWeekPlan.WeekPlanSets.Select(wps => new Get.WeekPlanSet
-                                                {
-                                                    Id = wps.Id,
-                                                    Value = wps.Value,
-                                                    WeekPlanId = wps.WeekPlanId,
-                                                    CreatedById = wps.CreatedById,
-                                                    UpdatedById = wps.UpdatedById,
-                                                    LastUpdated = wps.LastUpdated,
-                                                    CreatedDate = wps.CreatedDate
-                                                }).ToList();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Console.WriteLine($"Successfully fetched weekplans from MongoDB for {responses.Count} workouts");
-                        }
-                        else
-                        {
-                            // Timeout occurred
-                            Console.WriteLine("MongoDB query timeout (10s exceeded), falling back to SQL");
-                            useMongoForWeekPlans = false;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"MongoDB failed to fetch weekplans, falling back to SQL: {ex.Message}");
-                        useMongoForWeekPlans = false;
-                    }
-
-                    // Fallback to SQL for weekplans
-                    if (!useMongoForWeekPlans)
+                    else if (mainInclude == "weekplans")
                     {
                         var weekPlans = await _context.WeekPlans
                             .Where(wp => workoutIds.Contains(wp.WorkoutId))
@@ -335,6 +382,7 @@ public class Controller : ControllerBase
                         var weekPlanIds = weekPlans.Select(wp => wp.Id).ToList();
 
                         Dictionary<Guid, List<Get.WeekPlanSet>> weekPlanSetsByWeekPlanId = new();
+
                         if (includeParts.Length > 1 && includeParts[1] == "weekplansets" && weekPlanIds.Any())
                         {
                             var weekPlanSets = await _context.WeekPlanSets
@@ -360,6 +408,7 @@ public class Controller : ControllerBase
                         }
 
                         var workoutWeekPlans = new Dictionary<Guid, List<Get.WeekPlan>>();
+
                         foreach (var weekPlan in weekPlans)
                         {
                             if (!workoutWeekPlans.ContainsKey(weekPlan.WorkoutId))
@@ -387,7 +436,7 @@ public class Controller : ControllerBase
                             }
                         }
 
-                        Console.WriteLine("Successfully fetched weekplans from SQL (fallback)");
+                        Console.WriteLine("  ✓ Fetched weekplans from SQL");
                     }
                 }
             }

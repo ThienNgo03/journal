@@ -9,6 +9,7 @@ namespace Journal.Muscles;
 
 [ApiController]
 [Authorize]
+[AllowAnonymous]
 [Route("api/muscles")]
 public class Controller(IMessageBus messageBus, 
                         JournalDbContext context, 
@@ -79,6 +80,13 @@ public class Controller(IMessageBus messageBus,
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] Post.Payload payload)
     {
+        //if (User.Identity is null)
+        //    return Unauthorized();
+
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //if (userId is null)
+        //    return Unauthorized("User Id not found");
+
         Table item = new()
         {
             Id = Guid.NewGuid(),
@@ -98,12 +106,12 @@ public class Controller(IMessageBus messageBus,
                                            [FromBody] JsonPatchDocument<Table> patchDoc,
                                            CancellationToken cancellationToken = default!)
     {
-        if (User.Identity is null)
-            return Unauthorized();
+        //if (User.Identity is null)
+        //    return Unauthorized();
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId is null)
-            return Unauthorized("User Id not found");
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //if (userId is null)
+        //    return Unauthorized("User Id not found");
 
         var changes = new List<(string Path, object? Value)>();
         foreach (var op in patchDoc.Operations)
@@ -140,6 +148,13 @@ public class Controller(IMessageBus messageBus,
     [HttpPut]
     public async Task<IActionResult> Put([FromBody] Update.Payload payload)
     {
+        //if (User.Identity is null)
+        //    return Unauthorized();
+
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //if (userId is null)
+        //    return Unauthorized("User Id not found");
+
         var muscle = await _context.Muscles.FindAsync(payload.Id);
         if (muscle == null)
         {
@@ -165,6 +180,13 @@ public class Controller(IMessageBus messageBus,
 
     public async Task<IActionResult> Delete([FromQuery] Delete.Parameters parameters)
     {
+        //if (User.Identity is null)
+        //    return Unauthorized();
+
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //if (userId is null)
+        //    return Unauthorized("User Id not found");
+
         var muscle = await _context.Muscles.FindAsync(parameters.Id);
         if (muscle == null)
         {

@@ -10,6 +10,7 @@ namespace Journal.Exercises;
 
 [ApiController]
 [Authorize]
+[AllowAnonymous]
 [Route("api/exercises")]
 public class Controller(
     IMessageBus messageBus,
@@ -31,13 +32,20 @@ public class Controller(
     {
         List<Get.Response> responses = new();
         int totalCount = 0;
+        bool useMongoDb = false;
 
-        // ===== ALWAYS USE SQL FOR MAIN QUERY =====
-        var query = _context.Exercises.AsQueryable();
-        var all = query;
+        // Parse includes if exists
+        List<string> includes = new();
+        bool hasInclude = !string.IsNullOrEmpty(parameters.Include);
+        if (hasInclude)
+        {
+            includes = parameters.Include.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                         .Select(i => i.Trim().ToLower())
+                                         .ToList();
+        }
 
         // Handle SearchTerm with OpenSearch
-        List<Guid> ids = new();
+        List<Guid> searchIds = new();
         if (!string.IsNullOrEmpty(parameters.SearchTerm))
         {
             try
@@ -61,7 +69,7 @@ public class Controller(
 
                 if (searchResponse.IsValid)
                 {
-                    ids = searchResponse.Documents.Select(doc => doc.Id).ToList();
+                    searchIds = searchResponse.Documents.Select(doc => doc.Id).ToList();
                 }
                 else
                 {
@@ -76,194 +84,275 @@ public class Controller(
             }
         }
 
-        // Handle Ids parameter
-        if (!string.IsNullOrEmpty(parameters.Ids))
+        // ===== TRY MONGODB FIRST (ONLY IF INCLUDE EXISTS) =====
+        if (hasInclude)
         {
-            var parameterIds = parameters.Ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : (Guid?)null)
-                        .Where(guid => guid.HasValue)
-                        .Select(guid => guid.Value)
-                        .ToList();
-            ids = ids.Union(parameterIds).ToList();
-        }
-
-        if (ids.Any())
-            query = query.Where(x => ids.Contains(x.Id));
-
-        // Apply filters
-        if (!string.IsNullOrEmpty(parameters.Name))
-            query = query.Where(x => x.Name.Contains(parameters.Name));
-
-        if (!string.IsNullOrEmpty(parameters.Description))
-            query = query.Where(x => x.Description.Contains(parameters.Description));
-
-        if (!string.IsNullOrEmpty(parameters.Type))
-            query = query.Where(x => x.Type.Contains(parameters.Type));
-
-        if (parameters.CreatedDate.HasValue)
-            query = query.Where(x => x.CreatedDate == parameters.CreatedDate);
-
-        if (parameters.LastUpdated.HasValue)
-            query = query.Where(x => x.LastUpdated == parameters.LastUpdated);
-
-        // Apply sorting
-        if (!string.IsNullOrEmpty(parameters.SortBy))
-        {
-            var sortBy = typeof(Table)
-                .GetProperties()
-                .FirstOrDefault(p => p.Name.Equals(parameters.SortBy, StringComparison.OrdinalIgnoreCase))
-                ?.Name;
-            if (sortBy != null)
+            try
             {
-                query = parameters.SortOrder?.ToLower() == "desc"
-                    ? query.OrderByDescending(x => EF.Property<object>(x, sortBy))
-                    : query.OrderBy(x => EF.Property<object>(x, sortBy));
-            }
-        }
+                Console.WriteLine("Attempting to use MongoDB...");
 
-        // Get total count before pagination
-        totalCount = await all.CountAsync();
-
-        // Apply pagination
-        if (parameters.PageSize.HasValue && parameters.PageIndex.HasValue && parameters.PageSize > 0 && parameters.PageIndex >= 0)
-            query = query.Skip(parameters.PageIndex.Value * parameters.PageSize.Value).Take(parameters.PageSize.Value);
-
-        var result = await query.AsNoTracking().ToListAsync();
-
-        // Build base responses
-        responses = result.Select(exercise => new Get.Response
-        {
-            Id = exercise.Id,
-            Name = exercise.Name,
-            Description = exercise.Description,
-            Type = exercise.Type,
-            CreatedDate = exercise.CreatedDate,
-            LastUpdated = exercise.LastUpdated,
-            Muscles = null
-        }).ToList();
-
-        Console.WriteLine($"Successfully fetched {responses.Count} exercises from SQL");
-
-        // ===== USE MONGODB FOR NESTED DATA (INCLUDE) =====
-        if (!string.IsNullOrEmpty(parameters.Include))
-        {
-            var includes = parameters.Include.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                 .Select(i => i.Trim().ToLower())
-                                 .ToList();
-
-            if (includes.Any(inc => inc.Split(".")[0] == "muscles"))
-            {
-                bool useMongoForMuscles = true;
-
-                try
+                var mongoTask = Task.Run(async () =>
                 {
-                    var exerciseIds = responses.Select(x => x.Id).ToList();
+                    var mongoQuery = _mongoDbContext.Exercises.AsQueryable();
 
-                    // Create a task that will run MongoDB query
-                    var mongoTask = Task.Run(async () =>
+                    // Handle Ids from both SearchTerm and parameters.Ids
+                    List<Guid> ids = new List<Guid>(searchIds);
+                    if (!string.IsNullOrEmpty(parameters.Ids))
                     {
-                        return await _mongoDbContext.Exercises
-                            .Where(x => exerciseIds.Contains(x.Id))
-                            .ToListAsync();
-                    });
+                        var parameterIds = parameters.Ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : (Guid?)null)
+                            .Where(guid => guid.HasValue)
+                            .Select(guid => guid.Value)
+                            .ToList();
+                        ids = ids.Union(parameterIds).ToList();
+                    }
 
-                    // Wait for either completion or timeout
-                    if (await Task.WhenAny(mongoTask, Task.Delay(10000)) == mongoTask)
+                    if (ids.Any())
+                        mongoQuery = mongoQuery.Where(x => ids.Contains(x.Id));
+
+                    // Apply filters
+                    if (!string.IsNullOrEmpty(parameters.Name))
+                        mongoQuery = mongoQuery.Where(x => x.Name.Contains(parameters.Name));
+
+                    if (!string.IsNullOrEmpty(parameters.Description))
+                        mongoQuery = mongoQuery.Where(x => x.Description.Contains(parameters.Description));
+
+                    if (!string.IsNullOrEmpty(parameters.Type))
+                        mongoQuery = mongoQuery.Where(x => x.Type.Contains(parameters.Type));
+
+                    if (parameters.CreatedDate.HasValue)
+                        mongoQuery = mongoQuery.Where(x => x.CreatedDate == parameters.CreatedDate);
+
+                    if (parameters.LastUpdated.HasValue)
+                        mongoQuery = mongoQuery.Where(x => x.LastUpdated == parameters.LastUpdated);
+
+                    // Apply sorting
+                    if (!string.IsNullOrEmpty(parameters.SortBy))
                     {
-                        // MongoDB completed within timeout
-                        var exercisesWithMuscles = await mongoTask;
-                        var exerciseDict = exercisesWithMuscles.ToDictionary(e => e.Id);
+                        var sortBy = typeof(Databases.MongoDb.Collections.Exercise.Collection)
+                            .GetProperties()
+                            .FirstOrDefault(p => p.Name.Equals(parameters.SortBy, StringComparison.OrdinalIgnoreCase))
+                            ?.Name;
 
-                        foreach (var response in responses)
+                        if (sortBy != null)
                         {
-                            if (exerciseDict.TryGetValue(response.Id, out var exerciseWithMuscles) &&
-                                exerciseWithMuscles.Muscles != null &&
-                                exerciseWithMuscles.Muscles.Any())
+                            mongoQuery = parameters.SortOrder?.ToLower() == "desc"
+                                ? mongoQuery.OrderByDescending(x => EF.Property<object>(x, sortBy))
+                                : mongoQuery.OrderBy(x => EF.Property<object>(x, sortBy));
+                        }
+                    }
+
+                    // Get total count before pagination
+                    var count = await mongoQuery.CountAsync();
+
+                    // Apply pagination
+                    if (parameters.PageSize.HasValue && parameters.PageIndex.HasValue &&
+                        parameters.PageSize > 0 && parameters.PageIndex >= 0)
+                    {
+                        mongoQuery = mongoQuery.Skip(parameters.PageIndex.Value * parameters.PageSize.Value)
+                                               .Take(parameters.PageSize.Value);
+                    }
+
+                    var result = await mongoQuery.ToListAsync();
+
+                    return new { TotalCount = count, Data = result };
+                });
+
+                // Wait for MongoDB with 3 second timeout
+                if (await Task.WhenAny(mongoTask, Task.Delay(3000)) == mongoTask)
+                {
+                    var mongoResult = await mongoTask;
+                    totalCount = mongoResult.TotalCount;
+
+                    // Map MongoDB data to responses (1:1 mapping with includes)
+                    foreach (var exercise in mongoResult.Data)
+                    {
+                        var response = new Get.Response
+                        {
+                            Id = exercise.Id,
+                            Name = exercise.Name,
+                            Description = exercise.Description,
+                            Type = exercise.Type,
+                            CreatedDate = exercise.CreatedDate,
+                            LastUpdated = exercise.LastUpdated,
+                            Muscles = null
+                        };
+
+                        // Handle Muscles include
+                        var musclesInclude = includes.FirstOrDefault(i => i.StartsWith("muscles"));
+                        if (musclesInclude != null && exercise.Muscles != null && exercise.Muscles.Any())
+                        {
+                            response.Muscles = exercise.Muscles.Select(m => new Get.Muscle
                             {
-                                response.Muscles = exerciseWithMuscles.Muscles.Select(m => new Get.Muscle
-                                {
-                                    Id = m.Id,
-                                    Name = m.Name,
-                                    CreatedDate = m.CreatedDate,
-                                    LastUpdated = m.LastUpdated
-                                }).ToList();
+                                Id = m.Id,
+                                Name = m.Name,
+                                CreatedDate = m.CreatedDate,
+                                LastUpdated = m.LastUpdated
+                            }).ToList();
 
-                                // Apply muscle sorting if specified
-                                if (!string.IsNullOrEmpty(parameters.MusclesSortBy))
-                                {
-                                    var normalizeProp = typeof(Muscles.Table)
-                                        .GetProperties()
-                                        .FirstOrDefault(p => p.Name.Equals(parameters.MusclesSortBy, StringComparison.OrdinalIgnoreCase))
-                                        ?.Name;
+                            // Apply muscle sorting if specified
+                            if (!string.IsNullOrEmpty(parameters.MusclesSortBy))
+                            {
+                                var normalizeProp = typeof(Muscles.Table)
+                                    .GetProperties()
+                                    .FirstOrDefault(p => p.Name.Equals(parameters.MusclesSortBy, StringComparison.OrdinalIgnoreCase))
+                                    ?.Name;
 
-                                    if (normalizeProp != null)
+                                if (normalizeProp != null)
+                                {
+                                    var prop = typeof(Get.Muscle).GetProperty(normalizeProp);
+                                    if (prop != null)
                                     {
-                                        var prop = typeof(Get.Muscle).GetProperty(normalizeProp);
-                                        if (prop != null)
-                                        {
-                                            var isDescending = parameters.MusclesSortOrder?.ToLower() == "desc";
-                                            response.Muscles = isDescending
-                                                ? response.Muscles.OrderByDescending(m => prop.GetValue(m)).ToList()
-                                                : response.Muscles.OrderBy(m => prop.GetValue(m)).ToList();
-                                        }
+                                        var isDescending = parameters.MusclesSortOrder?.ToLower() == "desc";
+                                        response.Muscles = isDescending
+                                            ? response.Muscles.OrderByDescending(m => prop.GetValue(m)).ToList()
+                                            : response.Muscles.OrderBy(m => prop.GetValue(m)).ToList();
                                     }
                                 }
                             }
                         }
 
-                        Console.WriteLine($"Successfully fetched muscles from MongoDB for {responses.Count} exercises");
+                        responses.Add(response);
                     }
-                    else
-                    {
-                        // Timeout occurred
-                        Console.WriteLine("MongoDB query timeout (10s exceeded), falling back to SQL");
-                        useMongoForMuscles = false;
-                    }
+
+                    useMongoDb = true;
+                    Console.WriteLine($"✓ Successfully fetched {responses.Count} exercises from MongoDB");
                 }
-                catch (Exception ex)
+                else
                 {
-                    Console.WriteLine($"MongoDB failed to fetch muscles, falling back to SQL: {ex.Message}");
-                    useMongoForMuscles = false;
+                    Console.WriteLine("✗ MongoDB timeout (3s exceeded), falling back to SQL");
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"✗ MongoDB failed: {ex.Message}, falling back to SQL");
+            }
+        }
+        else
+        {
+            Console.WriteLine("No include parameter, using SQL directly...");
+        }
 
-                // Fallback to SQL for muscles
-                if (!useMongoForMuscles)
+        // ===== FALLBACK TO SQL =====
+        if (!useMongoDb)
+        {
+            Console.WriteLine("Using SQL for filtering and data retrieval...");
+
+            var sqlQuery = _context.Exercises.AsQueryable();
+            var allQuery = sqlQuery;
+
+            // Handle Ids from both SearchTerm and parameters.Ids
+            List<Guid> ids = new List<Guid>(searchIds);
+            if (!string.IsNullOrEmpty(parameters.Ids))
+            {
+                var parameterIds = parameters.Ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(id => Guid.TryParse(id.Trim(), out var guid) ? guid : (Guid?)null)
+                    .Where(guid => guid.HasValue)
+                    .Select(guid => guid.Value)
+                    .ToList();
+                ids = ids.Union(parameterIds).ToList();
+            }
+
+            if (ids.Any())
+                sqlQuery = sqlQuery.Where(x => ids.Contains(x.Id));
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(parameters.Name))
+                sqlQuery = sqlQuery.Where(x => x.Name.Contains(parameters.Name));
+
+            if (!string.IsNullOrEmpty(parameters.Description))
+                sqlQuery = sqlQuery.Where(x => x.Description.Contains(parameters.Description));
+
+            if (!string.IsNullOrEmpty(parameters.Type))
+                sqlQuery = sqlQuery.Where(x => x.Type.Contains(parameters.Type));
+
+            if (parameters.CreatedDate.HasValue)
+                sqlQuery = sqlQuery.Where(x => x.CreatedDate == parameters.CreatedDate);
+
+            if (parameters.LastUpdated.HasValue)
+                sqlQuery = sqlQuery.Where(x => x.LastUpdated == parameters.LastUpdated);
+
+            // Apply sorting
+            if (!string.IsNullOrEmpty(parameters.SortBy))
+            {
+                var sortBy = typeof(Table)
+                    .GetProperties()
+                    .FirstOrDefault(p => p.Name.Equals(parameters.SortBy, StringComparison.OrdinalIgnoreCase))
+                    ?.Name;
+
+                if (sortBy != null)
                 {
-                    var exerciseIds = responses.Select(x => x.Id).ToList();
-                    var exerciseMuscles = await _context.ExerciseMuscles
-                        .Where(x => exerciseIds.Contains(x.ExerciseId))
-                        .ToListAsync();
+                    sqlQuery = parameters.SortOrder?.ToLower() == "desc"
+                        ? sqlQuery.OrderByDescending(x => EF.Property<object>(x, sortBy))
+                        : sqlQuery.OrderBy(x => EF.Property<object>(x, sortBy));
+                }
+            }
 
-                    var muscleIds = exerciseMuscles.Select(x => x.MuscleId).Distinct().ToList();
+            // Get total count before pagination
+            totalCount = await allQuery.CountAsync();
 
-                    if (muscleIds.Any())
+            // Apply pagination
+            if (parameters.PageSize.HasValue && parameters.PageIndex.HasValue &&
+                parameters.PageSize > 0 && parameters.PageIndex >= 0)
+            {
+                sqlQuery = sqlQuery.Skip(parameters.PageIndex.Value * parameters.PageSize.Value)
+                                   .Take(parameters.PageSize.Value);
+            }
+
+            var sqlResult = await sqlQuery.AsNoTracking().ToListAsync();
+
+            // Build base responses
+            responses = sqlResult.Select(exercise => new Get.Response
+            {
+                Id = exercise.Id,
+                Name = exercise.Name,
+                Description = exercise.Description,
+                Type = exercise.Type,
+                CreatedDate = exercise.CreatedDate,
+                LastUpdated = exercise.LastUpdated,
+                Muscles = null
+            }).ToList();
+
+            Console.WriteLine($"✓ Successfully fetched {responses.Count} exercises from SQL");
+
+            // If Include exists, fetch nested data from SQL
+            if (includes.Any() && includes.Any(inc => inc.Split(".")[0] == "muscles"))
+            {
+                var exerciseIds = responses.Select(x => x.Id).ToList();
+                var exerciseMuscles = await _context.ExerciseMuscles
+                    .Where(x => exerciseIds.Contains(x.ExerciseId))
+                    .ToListAsync();
+
+                var muscleIds = exerciseMuscles.Select(x => x.MuscleId).Distinct().ToList();
+
+                if (muscleIds.Any())
+                {
+                    var muscles = await _context.Muscles
+                        .Where(x => muscleIds.Contains(x.Id))
+                        .ToDictionaryAsync(x => x.Id);
+
+                    var exerciseMuscleGroups = exerciseMuscles
+                        .GroupBy(x => x.ExerciseId)
+                        .ToDictionary(g => g.Key, g => g.Select(em => em.MuscleId));
+
+                    foreach (var response in responses)
                     {
-                        var muscles = await _context.Muscles
-                            .Where(x => muscleIds.Contains(x.Id))
-                            .ToDictionaryAsync(x => x.Id);
+                        if (!exerciseMuscleGroups.TryGetValue(response.Id, out var responseMuscleIds))
+                            continue;
 
-                        var exerciseMuscleGroups = exerciseMuscles
-                            .GroupBy(x => x.ExerciseId)
-                            .ToDictionary(g => g.Key, g => g.Select(em => em.MuscleId));
+                        response.Muscles = responseMuscleIds
+                            .Where(muscleId => muscles.ContainsKey(muscleId))
+                            .Select(muscleId => new Get.Muscle
+                            {
+                                Id = muscles[muscleId].Id,
+                                Name = muscles[muscleId].Name,
+                                CreatedDate = muscles[muscleId].CreatedDate,
+                                LastUpdated = muscles[muscleId].LastUpdated
+                            })
+                            .ToList();
 
-                        foreach (var response in responses)
-                        {
-                            if (!exerciseMuscleGroups.TryGetValue(response.Id, out var responseMuscleIds))
-                                continue;
-
-                            response.Muscles = responseMuscleIds
-                                .Where(muscleId => muscles.ContainsKey(muscleId))
-                                .Select(muscleId => new Get.Muscle
-                                {
-                                    Id = muscles[muscleId].Id,
-                                    Name = muscles[muscleId].Name,
-                                    CreatedDate = muscles[muscleId].CreatedDate,
-                                    LastUpdated = muscles[muscleId].LastUpdated
-                                })
-                                .ToList();
-                        }
-
-                        if (!string.IsNullOrEmpty(parameters.MusclesSortBy))
+                        // Apply muscle sorting if specified
+                        if (!string.IsNullOrEmpty(parameters.MusclesSortBy) && response.Muscles?.Any() == true)
                         {
                             var normalizeProp = typeof(Muscles.Table)
                                 .GetProperties()
@@ -272,22 +361,19 @@ public class Controller(
 
                             if (normalizeProp != null)
                             {
-                                var prop = typeof(Muscles.Table).GetProperty(normalizeProp);
+                                var prop = typeof(Get.Muscle).GetProperty(normalizeProp);
                                 if (prop != null)
                                 {
                                     var isDescending = parameters.MusclesSortOrder?.ToLower() == "desc";
-                                    foreach (var response in responses.Where(r => r.Muscles?.Any() == true))
-                                    {
-                                        response.Muscles = isDescending
-                                            ? response.Muscles.OrderByDescending(m => prop.GetValue(m)).ToList()
-                                            : response.Muscles.OrderBy(m => prop.GetValue(m)).ToList();
-                                    }
+                                    response.Muscles = isDescending
+                                        ? response.Muscles.OrderByDescending(m => prop.GetValue(m)).ToList()
+                                        : response.Muscles.OrderBy(m => prop.GetValue(m)).ToList();
                                 }
                             }
                         }
                     }
 
-                    Console.WriteLine("Successfully fetched muscles from SQL (fallback)");
+                    Console.WriteLine("  ✓ Fetched muscles from SQL");
                 }
             }
         }
@@ -543,12 +629,12 @@ public class Controller(
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] Post.Payload payload)
     {
-         if (User.Identity is null)
-            return Unauthorized();
+        // if (User.Identity is null)
+        //    return Unauthorized();
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId is null)
-            return Unauthorized("User Id not found");
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //if (userId is null)
+        //    return Unauthorized("User Id not found");
 
         Table exercise = new()
         {
@@ -570,12 +656,12 @@ public class Controller(
 
     public async Task<IActionResult> Put([FromBody] Update.Payload payload)
     {
-         if (User.Identity is null)
-            return Unauthorized();
+        // if (User.Identity is null)
+        //    return Unauthorized();
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId is null)
-            return Unauthorized("User Id not found");
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //if (userId is null)
+        //    return Unauthorized("User Id not found");
 
         var exercise = await _context.Exercises.FindAsync(payload.Id);
         if (exercise == null)
@@ -605,12 +691,12 @@ public class Controller(
                                            [FromBody] JsonPatchDocument<Table> patchDoc,
                                            CancellationToken cancellationToken = default!)
     {
-        if (User.Identity is null)
-            return Unauthorized();
+        //if (User.Identity is null)
+        //    return Unauthorized();
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId is null)
-            return Unauthorized("User Id not found");
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //if (userId is null)
+        //    return Unauthorized("User Id not found");
 
         var changes = new List<(string Path, object? Value)>();
 
@@ -651,12 +737,12 @@ public class Controller(
 
     public async Task<IActionResult> Delete([FromQuery] Delete.Parameters parameters)
     {
-        if (User.Identity is null)
-            return Unauthorized();
+        //if (User.Identity is null)
+        //    return Unauthorized();
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId is null)
-            return Unauthorized("User Id not found");
+        //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //if (userId is null)
+        //    return Unauthorized("User Id not found");
 
         var exercise = await _context.Exercises.FindAsync(parameters.Id);
         if (exercise == null)
