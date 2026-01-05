@@ -19,7 +19,10 @@
 
     <Grid>
         <!--  Content chính - Hiện khi KHÔNG loading  -->
-        <Grid Padding="16" RowSpacing="16" IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
+        <Grid
+            Padding="16"
+            IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
+            RowSpacing="16">
             <CollectionView
                 x:Name="MainList"
                 ItemsSource="{Binding AppUsages}"
@@ -212,10 +215,10 @@
                                             Stroke="#292929"
                                             StrokeShape="RoundRectangle 4">
 
-                                            <Label FontSize="11" TextColor="#fafafa">
+                                            <Label FontSize="11">
                                                 <Label.FormattedText>
                                                     <FormattedString>
-                                                        <Span Text="{Binding DayLeft}" />
+                                                        <Span Text="{Binding DayLeft}" TextColor="#fafafa" />
                                                         <Span Text=" " />
                                                     </FormattedString>
                                                 </Label.FormattedText>

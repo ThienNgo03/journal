@@ -78,8 +78,6 @@
                         IndicatorColor="LightGray"
                         SelectedIndicatorColor="Cyan" />
                 </VerticalStackLayout>
-                <Border Grid.Row="1" BackgroundColor="OliveDrab" />
-                <Border Grid.Row="2" BackgroundColor="DarkOliveGreen" />
             </Grid>
         </ScrollView>
     </RefreshView>

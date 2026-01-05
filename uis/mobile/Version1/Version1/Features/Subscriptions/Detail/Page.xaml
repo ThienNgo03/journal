@@ -305,43 +305,58 @@
                             FontSize="Subtitle"
                             Text="Testing (DEV)"
                             TextColor="#fafafa" />
-                        <Label TextColor="#fafafa">
+                        <Label>
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Company value: " />
-                                    <Span FontAttributes="Bold" Text="{x:Binding CompanyValue}" />
+                                    <Span Text="Company value: " TextColor="#fafafa" />
+                                    <Span
+                                        FontAttributes="Bold"
+                                        Text="{x:Binding CompanyValue}"
+                                        TextColor="#fafafa" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
-                        <Label TextColor="#fafafa">
+                        <Label>
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Subscription value: " />
-                                    <Span FontAttributes="Bold" Text="{x:Binding SubscriptionValue}" />
+                                    <Span Text="Subscription value: " TextColor="#fafafa" />
+                                    <Span
+                                        FontAttributes="Bold"
+                                        Text="{x:Binding SubscriptionValue}"
+                                        TextColor="#fafafa" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
-                        <Label TextColor="#fafafa">
+                        <Label>
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Color value: " />
-                                    <Span FontAttributes="Bold" Text="{x:Binding SelectedColor}" />
+                                    <Span Text="Color value: " TextColor="#fafafa" />
+                                    <Span
+                                        FontAttributes="Bold"
+                                        Text="{x:Binding SelectedColor}"
+                                        TextColor="#fafafa" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
-                        <Label TextColor="#fafafa">
+                        <Label>
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Price value: " />
-                                    <Span FontAttributes="Bold" Text="{x:Binding Price}" />
+                                    <Span Text="Price value: " TextColor="#fafafa" />
+                                    <Span
+                                        FontAttributes="Bold"
+                                        Text="{x:Binding Price}"
+                                        TextColor="#fafafa" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
-                        <Label TextColor="#fafafa">
+                        <Label>
                             <Label.FormattedText>
                                 <FormattedString>
-                                    <Span Text="Next Renewable Date value: " />
-                                    <Span FontAttributes="Bold" Text="{x:Binding NextRenewalSelectedDate}" />
+                                    <Span Text="Next Renewable Date value: " TextColor="#fafafa" />
+                                    <Span
+                                        FontAttributes="Bold"
+                                        Text="{x:Binding NextRenewalSelectedDate}"
+                                        TextColor="#fafafa" />
                                 </FormattedString>
                             </Label.FormattedText>
                         </Label>
