@@ -42,8 +42,8 @@ public static class Extension
                 var hasBearer = context.Request.Headers["Authorization"].FirstOrDefault()?.StartsWith("Bearer ") == true;
                 var hasHmac = context.Request.Headers.ContainsKey("X-Machine-Hash");
 
-                if (hasBearer) return JwtBearerDefaults.AuthenticationScheme;
                 if (hasHmac) return "HMAC";
+                if (hasBearer) return JwtBearerDefaults.AuthenticationScheme;
 
                 return JwtBearerDefaults.AuthenticationScheme;
             };

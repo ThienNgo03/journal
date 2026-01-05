@@ -10,7 +10,6 @@ namespace Journal.Exercises;
 
 [ApiController]
 [Authorize]
-[AllowAnonymous]
 [Route("api/exercises")]
 public class Controller(
     IMessageBus messageBus,

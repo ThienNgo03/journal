@@ -18,8 +18,8 @@ public class Controller(JournalDbContext journalDbContext,
     private readonly IOpenSearchClient openSearchClient = openSearchClient;
     private readonly MongoDbContext mongoDbContext = mongoDbContext;
 
-    [HttpPost("add-init-admin")]
     [AllowAnonymous]
+    [HttpPost("add-init-admin")]
     public async Task<IActionResult> AddInitAdmin()
     {
         await identitySeeder.SeedAdmins(identityDbContext);

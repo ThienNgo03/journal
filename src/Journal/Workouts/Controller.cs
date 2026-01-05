@@ -5,7 +5,6 @@ namespace Journal.Workouts;
 
 [ApiController]
 [Authorize]
-[AllowAnonymous]
 [Route("api/workouts")]
 public class Controller : ControllerBase
 {

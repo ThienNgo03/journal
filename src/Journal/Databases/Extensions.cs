@@ -18,14 +18,38 @@ public static class Extensions
         var cassandraDbConfig = configuration.GetSection("CassandraDb").Get<CassandraConfig>();
         if (cassandraDbConfig != null)
         {
-            Cluster cluster = Cluster.Builder()
-                .AddContactPoint(cassandraDbConfig.ContactPoint)
-                .WithPort(cassandraDbConfig.Port)
-                .Build();
+            try
+            {
+                var cluster = Cluster.Builder()
+                    .AddContactPoint(cassandraDbConfig.ContactPoint)
+                    .WithPort(cassandraDbConfig.Port)
+                    .WithLoadBalancingPolicy(new DCAwareRoundRobinPolicy(cassandraDbConfig.DataCenter))
+                    .Build();
 
-            Cassandra.ISession session = cluster.Connect(cassandraDbConfig.Keyspace);
-            services.AddSingleton<CassandraCql.Context>();
-            services.AddSingleton(session);
+                // Nếu chưa có keyspace, có thể Connect() không tham số trước
+                Cassandra.ISession session;
+                if (!string.IsNullOrEmpty(cassandraDbConfig.Keyspace))
+                {
+                    session = cluster.Connect(cassandraDbConfig.Keyspace);
+                }
+                else
+                {
+                    session = cluster.Connect();
+                }
+
+                services.AddSingleton<CassandraCql.Context>();
+                services.AddSingleton(session);
+
+                Console.WriteLine("✅ Cassandra connected");
+            }
+            catch (Cassandra.NoHostAvailableException)
+            {
+                Console.WriteLine("⚠️ Cassandra not available, skipping...");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️ Cassandra error: {ex.Message}, skipping...");
+            }
         }
         #endregion
         var journalDbConfig = configuration.GetSection("JournalDb").Get<Sql.DbConfig>();
@@ -45,7 +69,7 @@ public static class Extensions
             .WithDatabase(journalDbConfig.Database)
             .WithUsername(journalDbConfig.Username)
             .WithPassword(journalDbConfig.Password)
-            .WithTrustedConnection()
+            //.WithTrustedConnection()
             .WithTrustServerCertificate()
             .Build();
 
@@ -55,7 +79,7 @@ public static class Extensions
             .WithDatabase(identityDbConfig.Database)
             .WithUsername(identityDbConfig.Username)
             .WithPassword(identityDbConfig.Password)
-            .WithTrustedConnection()
+            //.WithTrustedConnection()
             .WithTrustServerCertificate()
             .Build();
 

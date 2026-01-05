@@ -152,4 +152,5 @@ public class Test : BaseTest
         var deletedWorkoutLogSet = await dbContext.WorkoutLogSets.FindAsync(id);
         Assert.Null(deletedWorkoutLogSet);
     }
+
 }

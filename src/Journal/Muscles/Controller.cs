@@ -9,7 +9,6 @@ namespace Journal.Muscles;
 
 [ApiController]
 [Authorize]
-[AllowAnonymous]
 [Route("api/muscles")]
 public class Controller(IMessageBus messageBus, 
                         JournalDbContext context, 
