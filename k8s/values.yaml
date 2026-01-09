@@ -181,8 +181,9 @@ opensearch:
       cluster.name: opensearch-cluster
       network.host: 0.0.0.0
       discovery.type: single-node
-      plugins.ml_commons.enabled: false
       plugins.security.disabled: true
+      plugins.ml_commons.max_ml_task_per_node: 0
+      plugins.ml_commons.max_models_per_node: 0
   extraEnvs:
     - name: DISABLE_SECURITY_PLUGIN
       value: "true"
