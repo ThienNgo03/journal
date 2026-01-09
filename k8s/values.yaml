@@ -81,6 +81,10 @@ sqlserver:
     storageClass: ""
     size: 5Gi
     mountPath: /var/opt/mssql
+  securityContext:
+    fsGroup: 10001
+    runAsUser: 10001
+    runAsNonRoot: true
   resources:
     limits:
       cpu: 1000m
