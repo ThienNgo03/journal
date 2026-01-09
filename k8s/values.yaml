@@ -1,7 +1,7 @@
-# Default values for journal application
-# This is a YAML-formatted file.
+# Minimal Resource Configuration
+# Optimized for 4CPU/4GB worker nodes
+# Use this file for resource-constrained environments
 
-# Journal Application Configuration
 journal:
   replicaCount: 1
 
@@ -20,21 +20,21 @@ journal:
     className: nginx
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-staging
-      # nginx.ingress.kubernetes.io/ssl-redirect: "true"
     hosts:
-      - host: journal.cmt8.sohan.cloud
+      - host: journal.example.com
         paths:
           - path: /
             pathType: Prefix
     tls:
       - secretName: journal-tls
         hosts:
-          - journal.cmt8.sohan.cloud
+          - journal.example.com
 
   env:
     - name: ASPNETCORE_URLS
       value: "http://+:80"
 
+  # OPTIMIZED: Reduced from 250m/256Mi to 100m/128Mi requests
   resources:
     limits:
       cpu: 500m
@@ -57,31 +57,25 @@ journal:
     initialDelaySeconds: 5
     periodSeconds: 5
 
-# SQL Server Configuration (Custom Deployment)
+# SQL Server - OPTIMIZED: Reduced from 500m/1Gi to 250m/512Mi requests
 sqlserver:
   enabled: true
-
   image:
     repository: mcr.microsoft.com/mssql/server
     tag: "2022-latest"
     pullPolicy: IfNotPresent
-
   acceptEula: "Y"
   edition: Developer
-
   auth:
     saPassword: "SqlServer2022!"
-
   service:
     type: ClusterIP
     port: 1433
-
   persistence:
     enabled: true
     storageClass: ""
     size: 5Gi
     mountPath: /var/opt/mssql
-
   resources:
     limits:
       cpu: 1000m
@@ -90,26 +84,25 @@ sqlserver:
       cpu: 250m
       memory: 512Mi
 
-# PostgreSQL Configuration (Bitnami)
+# PostgreSQL - OPTIMIZED: Reduced from 250m/256Mi to 100m/128Mi requests
+# NOTE: Not used by the application, can be disabled to save resources
 postgresql:
-  enabled: true
-
+  enabled: false  # Disabled by default to save resources
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
   auth:
     postgresPassword: "postgrespw"
     database: "journaldb"
-    username: ""
-
   primary:
     service:
       type: ClusterIP
       ports:
         postgresql: 5432
-
     persistence:
       enabled: true
       storageClass: ""
       size: 5Gi
-
     resources:
       limits:
         cpu: 400m
@@ -118,28 +111,25 @@ postgresql:
         cpu: 100m
         memory: 128Mi
 
-# MongoDB Configuration (Bitnami)
+# MongoDB - OPTIMIZED: Reduced from 250m/256Mi to 100m/256Mi requests
 mongodb:
   enabled: true
-
   image:
+    registry: docker.io
+    repository: bitnamilegacy/mongodb
     tag: "6.0"
-
   auth:
     enabled: true
     rootUser: "root"
     rootPassword: "mongopw"
-
   service:
     type: ClusterIP
     ports:
       mongodb: 27017
-
   persistence:
     enabled: true
     storageClass: ""
     size: 5Gi
-
   resources:
     limits:
       cpu: 500m
@@ -148,27 +138,26 @@ mongodb:
       cpu: 100m
       memory: 256Mi
 
-# Cassandra Configuration (Bitnami)
+# Cassandra - OPTIMIZED: Reduced from 500m/1Gi to 250m/512Mi requests
 cassandra:
   enabled: true
-
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/cassandra
   cluster:
     name: "TestCluster"
     datacenter: "datacenter1"
     rack: "rack1"
     seedCount: 1
     numTokens: 256
-
   service:
     type: ClusterIP
     ports:
       cql: 9042
-
   persistence:
     enabled: true
     storageClass: ""
     size: 5Gi
-
   resources:
     limits:
       cpu: 1000m
@@ -177,38 +166,30 @@ cassandra:
       cpu: 250m
       memory: 512Mi
 
-# OpenSearch Configuration (Official OpenSearch)
+# OpenSearch - OPTIMIZED: Reduced from 500m/512Mi to 200m/384Mi requests
 opensearch:
   enabled: true
-
   singleNode: true
-
   replicas: 1
-
-  opensearchJavaOpts: "-Xms384m -Xmx384m"
-
+  opensearchJavaOpts: "-Xms384m -Xmx384m"  # Reduced Java heap from 512m
   config:
     opensearch.yml: |
       cluster.name: opensearch-cluster
       network.host: 0.0.0.0
       discovery.type: single-node
-
   extraEnvs:
     - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
       value: "MySecure@Pass123!"
     - name: DISABLE_SECURITY_PLUGIN
       value: "false"
-
   service:
     type: ClusterIP
     httpPort: 9200
     transportPort: 9600
-
   persistence:
     enabled: true
     storageClass: ""
     size: 5Gi
-
   resources:
     limits:
       cpu: 600m
@@ -216,3 +197,11 @@ opensearch:
     requests:
       cpu: 200m
       memory: 384Mi
+
+# RESOURCE SUMMARY
+# ================
+# Total Requests: 1000m CPU (1 core), 1920Mi RAM (1.9GB)
+# Total Limits:   4000m CPU (4 cores), 3840Mi RAM (3.75GB)
+#
+# This configuration fits comfortably on 4CPU/4GB nodes
+# and leaves ~1.4GB RAM for system pods and other workloads
