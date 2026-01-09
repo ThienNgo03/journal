@@ -1,0 +1,218 @@
+# Default values for journal application
+# This is a YAML-formatted file.
+
+# Journal Application Configuration
+journal:
+  replicaCount: 1
+
+  image:
+    repository: coolserver/journal
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-staging
+      # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: journal.cmt8.sohan.cloud
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: journal-tls
+        hosts:
+          - journal.cmt8.sohan.cloud
+
+  env:
+    - name: ASPNETCORE_URLS
+      value: "http://+:80"
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# SQL Server Configuration (Custom Deployment)
+sqlserver:
+  enabled: true
+
+  image:
+    repository: mcr.microsoft.com/mssql/server
+    tag: "2022-latest"
+    pullPolicy: IfNotPresent
+
+  acceptEula: "Y"
+  edition: Developer
+
+  auth:
+    saPassword: "SqlServer2022!"
+
+  service:
+    type: ClusterIP
+    port: 1433
+
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 5Gi
+    mountPath: /var/opt/mssql
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+# PostgreSQL Configuration (Bitnami)
+postgresql:
+  enabled: true
+
+  auth:
+    postgresPassword: "postgrespw"
+    database: "journaldb"
+    username: ""
+
+  primary:
+    service:
+      type: ClusterIP
+      ports:
+        postgresql: 5432
+
+    persistence:
+      enabled: true
+      storageClass: ""
+      size: 5Gi
+
+    resources:
+      limits:
+        cpu: 400m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# MongoDB Configuration (Bitnami)
+mongodb:
+  enabled: true
+
+  image:
+    tag: "6.0"
+
+  auth:
+    enabled: true
+    rootUser: "root"
+    rootPassword: "mongopw"
+
+  service:
+    type: ClusterIP
+    ports:
+      mongodb: 27017
+
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 5Gi
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+# Cassandra Configuration (Bitnami)
+cassandra:
+  enabled: true
+
+  cluster:
+    name: "TestCluster"
+    datacenter: "datacenter1"
+    rack: "rack1"
+    seedCount: 1
+    numTokens: 256
+
+  service:
+    type: ClusterIP
+    ports:
+      cql: 9042
+
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 5Gi
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+# OpenSearch Configuration (Official OpenSearch)
+opensearch:
+  enabled: true
+
+  singleNode: true
+
+  replicas: 1
+
+  opensearchJavaOpts: "-Xms384m -Xmx384m"
+
+  config:
+    opensearch.yml: |
+      cluster.name: opensearch-cluster
+      network.host: 0.0.0.0
+      discovery.type: single-node
+
+  extraEnvs:
+    - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+      value: "MySecure@Pass123!"
+    - name: DISABLE_SECURITY_PLUGIN
+      value: "false"
+
+  service:
+    type: ClusterIP
+    httpPort: 9200
+    transportPort: 9600
+
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 5Gi
+
+  resources:
+    limits:
+      cpu: 600m
+      memory: 768Mi
+    requests:
+      cpu: 200m
+      memory: 384Mi

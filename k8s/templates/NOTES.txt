@@ -1,0 +1,87 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}
+
+The Journal application is being deployed with the following databases:
+{{- if .Values.postgresql.enabled }}
+  - PostgreSQL (ClusterIP)
+{{- end }}
+{{- if .Values.mongodb.enabled }}
+  - MongoDB (ClusterIP)
+{{- end }}
+{{- if .Values.cassandra.enabled }}
+  - Cassandra (ClusterIP)
+{{- end }}
+{{- if .Values.sqlserver.enabled }}
+  - SQL Server 2022 (ClusterIP)
+{{- end }}
+{{- if .Values.opensearch.enabled }}
+  - OpenSearch (ClusterIP)
+{{- end }}
+
+{{- if .Values.journal.ingress.enabled }}
+
+The Journal application will be available at:
+{{- range .Values.journal.ingress.hosts }}
+  http{{ if $.Values.journal.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+
+NOTE: It may take a few minutes for the Ingress to become available.
+{{- else }}
+
+Get the application URL by running these commands:
+{{- if contains "NodePort" .Values.journal.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "journal.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.journal.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        You can watch the status by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "journal.fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "journal.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.journal.service.port }}
+{{- else if contains "ClusterIP" .Values.journal.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "journal.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:80
+{{- end }}
+{{- end }}
+
+Database Connection Information:
+{{- if .Values.postgresql.enabled }}
+  PostgreSQL:
+    Host: {{ .Release.Name }}-postgresql
+    Port: 5432
+    Password: (stored in secret)
+{{- end }}
+{{- if .Values.mongodb.enabled }}
+  MongoDB:
+    Host: {{ .Release.Name }}-mongodb
+    Port: 27017
+    Username: root
+    Password: (stored in secret)
+{{- end }}
+{{- if .Values.cassandra.enabled }}
+  Cassandra:
+    Host: {{ .Release.Name }}-cassandra
+    Port: 9042
+{{- end }}
+{{- if .Values.sqlserver.enabled }}
+  SQL Server:
+    Host: {{ include "journal.fullname" . }}-sqlserver
+    Port: 1433
+    Username: sa
+    Password: (stored in secret)
+{{- end }}
+{{- if .Values.opensearch.enabled }}
+  OpenSearch:
+    Host: {{ .Release.Name }}-opensearch
+    HTTP Port: 9200
+    Transport Port: 9600
+    Username: admin
+    Password: (stored in secret)
+{{- end }}

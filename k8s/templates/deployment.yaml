@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "journal.fullname" . }}
+  labels:
+    {{- include "journal.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.journal.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "journal.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "journal.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: journal
+        image: "{{ .Values.journal.image.repository }}:{{ .Values.journal.image.tag }}"
+        imagePullPolicy: {{ .Values.journal.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.journal.service.targetPort }}
+          protocol: TCP
+        env:
+        {{- range .Values.journal.env }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
+        volumeMounts:
+        - name: config
+          mountPath: /app/appsettings.Docker.json
+          subPath: appsettings.Docker.json
+          readOnly: true
+        {{- if .Values.journal.livenessProbe }}
+        livenessProbe:
+          {{- toYaml .Values.journal.livenessProbe | nindent 10 }}
+        {{- end }}
+        {{- if .Values.journal.readinessProbe }}
+        readinessProbe:
+          {{- toYaml .Values.journal.readinessProbe | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.journal.resources | nindent 10 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "journal.fullname" . }}-config

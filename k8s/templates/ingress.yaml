@@ -1,0 +1,41 @@
+{{- if .Values.journal.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "journal.fullname" . }}
+  labels:
+    {{- include "journal.labels" . | nindent 4 }}
+  {{- with .Values.journal.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.journal.ingress.className }}
+  ingressClassName: {{ .Values.journal.ingress.className }}
+  {{- end }}
+  {{- if .Values.journal.ingress.tls }}
+  tls:
+    {{- range .Values.journal.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.journal.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "journal.fullname" $ }}
+                port:
+                  number: {{ $.Values.journal.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}

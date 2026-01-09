@@ -1,0 +1,250 @@
+# Production Values Example
+# Copy this file and customize for your production environment
+# Install with: helm install journal . -f values-production.yaml -n journal
+
+journal:
+  replicaCount: 3  # High availability
+
+  image:
+    repository: coolserver/journal
+    pullPolicy: IfNotPresent
+    tag: "v1.0.0"  # Use specific version tag, not 'latest'
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+    hosts:
+      - host: journal.yourdomain.com  # CHANGE THIS
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: journal-tls
+        hosts:
+          - journal.yourdomain.com  # CHANGE THIS
+
+  env:
+    - name: ASPNETCORE_ENVIRONMENT
+      value: "Production"
+    - name: ASPNETCORE_URLS
+      value: "http://+:80"
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# SQL Server Configuration
+sqlserver:
+  enabled: true
+
+  image:
+    repository: mcr.microsoft.com/mssql/server
+    tag: "2022-latest"
+    pullPolicy: IfNotPresent
+
+  acceptEula: "Y"
+  edition: Developer  # Change to "Standard" or "Enterprise" for production
+
+  auth:
+    saPassword: "CHANGE_THIS_STRONG_PASSWORD_123!"  # REQUIRED: Use strong password
+
+  service:
+    type: ClusterIP
+    port: 1433
+
+  persistence:
+    enabled: true
+    storageClass: "gp3"  # CHANGE: Use your storage class (gp3 for AWS, premium-rwo for GCP)
+    size: 5Gi
+    mountPath: /var/opt/mssql
+
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+# PostgreSQL Configuration
+postgresql:
+  enabled: true
+
+  auth:
+    postgresPassword: "CHANGE_THIS_POSTGRES_PASSWORD"  # REQUIRED: Use strong password
+    database: "journaldb"
+    username: ""
+
+  primary:
+    service:
+      type: ClusterIP
+      ports:
+        postgresql: 5432
+
+    persistence:
+      enabled: true
+      storageClass: "gp3"  # CHANGE: Use your storage class
+      size: 5Gi
+
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+  # Enable backup
+  backup:
+    enabled: false  # Set to true and configure backup
+
+# MongoDB Configuration
+mongodb:
+  enabled: true
+
+  image:
+    tag: "6.0"
+
+  auth:
+    enabled: true
+    rootUser: "root"
+    rootPassword: "CHANGE_THIS_MONGO_PASSWORD"  # REQUIRED: Use strong password
+
+  service:
+    type: ClusterIP
+    ports:
+      mongodb: 27017
+
+  persistence:
+    enabled: true
+    storageClass: "gp3"  # CHANGE: Use your storage class
+    size: 5Gi
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  # Replica set configuration for HA
+  replicaCount: 1  # Increase to 3 for production HA
+  architecture: standalone  # Change to "replicaset" for HA
+
+# Cassandra Configuration
+cassandra:
+  enabled: true
+
+  cluster:
+    name: "ProductionCluster"  # CHANGE: Use meaningful name
+    datacenter: "datacenter1"
+    rack: "rack1"
+    seedCount: 1
+    numTokens: 256
+
+  service:
+    type: ClusterIP
+    ports:
+      cql: 9042
+
+  persistence:
+    enabled: true
+    storageClass: "gp3"  # CHANGE: Use your storage class
+    size: 5Gi
+
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+  # Replica configuration for HA
+  replicaCount: 1  # Increase to 3 for production HA
+
+# OpenSearch Configuration
+opensearch:
+  enabled: true
+
+  singleNode: true  # Set to false for multi-node cluster
+
+  replicas: 1  # Increase to 3 for production HA
+
+  opensearchJavaOpts: "-Xms1g -Xmx1g"  # Increase for production
+
+  config:
+    opensearch.yml: |
+      cluster.name: production-opensearch-cluster
+      network.host: 0.0.0.0
+      discovery.type: single-node  # Remove for multi-node
+
+  extraEnvs:
+    - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+      value: "CHANGE_THIS_OPENSEARCH_PASSWORD_123!"  # REQUIRED: Use strong password (min 8 chars, uppercase, lowercase, digit, special char)
+    - name: DISABLE_SECURITY_PLUGIN
+      value: "false"
+
+  service:
+    type: ClusterIP
+    httpPort: 9200
+    transportPort: 9600
+
+  persistence:
+    enabled: true
+    storageClass: "gp3"  # CHANGE: Use your storage class
+    size: 5Gi
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+
+# Additional Production Recommendations:
+#
+# 1. Use external secret management (e.g., AWS Secrets Manager, HashiCorp Vault)
+# 2. Enable Pod Security Policies or Pod Security Standards
+# 3. Configure Network Policies to restrict traffic
+# 4. Set up monitoring with Prometheus and Grafana
+# 5. Configure log aggregation (ELK, Loki, CloudWatch)
+# 6. Enable database backups to S3/GCS
+# 7. Configure pod disruption budgets for HA
+# 8. Set up autoscaling (HPA) for the journal application
+# 9. Use init containers for database schema migrations
+# 10. Implement proper RBAC policies

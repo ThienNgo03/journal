@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "journal.fullname" . }}-config
+  labels:
+    {{- include "journal.labels" . | nindent 4 }}
+data:
+  appsettings.Docker.json: |
+    {
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      },
+      "AllowedHosts": "",
+      "Jwt": {
+        "Issuer": "AuthCoolServer",
+        "Audience": "AuthCoolClient",
+        "Key": "ThisIsMySuperSecureKeyWithAtLeast32Chars!"
+      },
+      "JournalDb": {
+        "Host": "{{ include "journal.fullname" . }}-sqlserver",
+        "Port": "1433",
+        "Database": "ssto-database",
+        "Username": "sa",
+        "Password": "{{ .Values.sqlserver.auth.saPassword }}"
+      },
+      "IdentityDb": {
+        "Host": "{{ include "journal.fullname" . }}-sqlserver",
+        "Port": "1433",
+        "Database": "ssto-database",
+        "Username": "sa",
+        "Password": "{{ .Values.sqlserver.auth.saPassword }}"
+      },
+      "OpenSearch": {
+        "Host": "{{ .Release.Name }}-opensearch",
+        "Port": 9200,
+        "Username": "admin",
+        "Password": "{{ (index .Values.opensearch.extraEnvs 0).value }}"
+      },
+      "MongoDb": {
+        "Host": "{{ .Release.Name }}-mongodb",
+        "Port": 27017,
+        "Database": "Journal",
+        "Username": "root",
+        "Password": "{{ .Values.mongodb.auth.rootPassword }}",
+        "AuthDatabase": "admin"
+      },
+      "MachineAuth": {
+        "SecretKey": "secretKey"
+      },
+      "CassandraDb": {
+        "ContactPoint": "{{ .Release.Name }}-cassandra",
+        "Port": "9042",
+        "Keyspace": "journal",
+        "DataCenter": "{{ .Values.cassandra.cluster.datacenter }}"
+      }
+    }

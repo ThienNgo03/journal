@@ -1,0 +1,75 @@
+{{- if .Values.sqlserver.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "journal.fullname" . }}-sqlserver
+  labels:
+    {{- include "journal.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sqlserver
+spec:
+  serviceName: {{ include "journal.fullname" . }}-sqlserver
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "journal.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: sqlserver
+  template:
+    metadata:
+      labels:
+        {{- include "journal.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: sqlserver
+    spec:
+      hostname: sqlserver
+      containers:
+      - name: sqlserver
+        image: "{{ .Values.sqlserver.image.repository }}:{{ .Values.sqlserver.image.tag }}"
+        imagePullPolicy: {{ .Values.sqlserver.image.pullPolicy }}
+        ports:
+        - name: mssql
+          containerPort: 1433
+          protocol: TCP
+        env:
+        - name: ACCEPT_EULA
+          value: {{ .Values.sqlserver.acceptEula | quote }}
+        - name: MSSQL_PID
+          value: {{ .Values.sqlserver.edition | quote }}
+        - name: SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "journal.fullname" . }}-db-secrets
+              key: sqlserver-sa-password
+        {{- if .Values.sqlserver.persistence.enabled }}
+        volumeMounts:
+        - name: mssql-data
+          mountPath: {{ .Values.sqlserver.persistence.mountPath }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.sqlserver.resources | nindent 10 }}
+        livenessProbe:
+          tcpSocket:
+            port: 1433
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 1433
+          initialDelaySeconds: 15
+          periodSeconds: 5
+  {{- if .Values.sqlserver.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: mssql-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.sqlserver.persistence.storageClass }}
+      {{- if (eq "-" .Values.sqlserver.persistence.storageClass) }}
+      storageClassName: ""
+      {{- else }}
+      storageClassName: {{ .Values.sqlserver.persistence.storageClass | quote }}
+      {{- end }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.sqlserver.persistence.size }}
+  {{- end }}
+{{- end }}
