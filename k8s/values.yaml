@@ -183,7 +183,7 @@ opensearch:
       discovery.type: single-node
       plugins.security.disabled: true
       plugins.ml_commons.max_ml_task_per_node: 0
-      plugins.ml_commons.max_models_per_node: 0
+      plugins.ml_commons.max_model_on_node: 0
   extraEnvs:
     - name: DISABLE_SECURITY_PLUGIN
       value: "true"
