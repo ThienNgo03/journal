@@ -181,11 +181,15 @@ opensearch:
       cluster.name: opensearch-cluster
       network.host: 0.0.0.0
       discovery.type: single-node
+      plugins.ml_commons.enabled: false
+      plugins.security.disabled: true
   extraEnvs:
     - name: DISABLE_SECURITY_PLUGIN
       value: "true"
     - name: DISABLE_INSTALL_DEMO_CONFIG
       value: "true"
+    - name: OPENSEARCH_JAVA_OPTS
+      value: "-Xms384m -Xmx384m"
   service:
     type: ClusterIP
     httpPort: 9200
