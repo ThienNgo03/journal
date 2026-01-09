@@ -11,7 +11,7 @@ journal:
   replicaCount: 1
 
   image:
-    repository: nhatsangvn/viet-journal
+    repository: docker.io/nhatsangvn/viet-journal
     pullPolicy: IfNotPresent
     tag: "latest"
 

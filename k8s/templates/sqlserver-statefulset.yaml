@@ -20,6 +20,10 @@ spec:
         app.kubernetes.io/component: sqlserver
     spec:
       hostname: sqlserver
+      {{- if .Values.sqlserver.securityContext }}
+      securityContext:
+        {{- toYaml .Values.sqlserver.securityContext | nindent 8 }}
+      {{- end }}
       containers:
       - name: sqlserver
         image: "{{ .Values.sqlserver.image.repository }}:{{ .Values.sqlserver.image.tag }}"
