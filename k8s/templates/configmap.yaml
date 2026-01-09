@@ -34,10 +34,10 @@ data:
         "Password": "{{ .Values.sqlserver.auth.saPassword }}"
       },
       "OpenSearch": {
-        "Host": "{{ .Release.Name }}-opensearch",
+        "Host": "opensearch-cluster-master",
         "Port": 9200,
-        "Username": "admin",
-        "Password": "{{ (index .Values.opensearch.extraEnvs 0).value }}"
+        "Username": "",
+        "Password": ""
       },
       "MongoDb": {
         "Host": "{{ .Release.Name }}-mongodb",
