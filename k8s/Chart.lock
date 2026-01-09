@@ -1,0 +1,15 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 18.2.0
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 13.18.5
+- name: cassandra
+  repository: https://charts.bitnami.com/bitnami
+  version: 12.3.11
+- name: opensearch
+  repository: https://opensearch-project.github.io/helm-charts/
+  version: 2.23.1
+digest: sha256:306e74417cb61e01db7911a12bb7574fd1324b7adccec825812fc9596cb5f553
+generated: "2026-01-09T10:04:24.687969663Z"
