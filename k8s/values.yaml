@@ -182,10 +182,10 @@ opensearch:
       network.host: 0.0.0.0
       discovery.type: single-node
   extraEnvs:
-    - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
-      value: "MySecure@Pass123!"
     - name: DISABLE_SECURITY_PLUGIN
-      value: "false"
+      value: "true"
+    - name: DISABLE_INSTALL_DEMO_CONFIG
+      value: "true"
   service:
     type: ClusterIP
     httpPort: 9200
