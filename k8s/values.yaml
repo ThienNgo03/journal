@@ -2,6 +2,11 @@
 # Optimized for 4CPU/4GB worker nodes
 # Use this file for resource-constrained environments
 
+# Global configuration for Bitnami charts
+global:
+  security:
+    allowInsecureImages: true
+
 journal:
   replicaCount: 1
 
