@@ -11,7 +11,7 @@ journal:
   replicaCount: 1
 
   image:
-    repository: coolserver/journal
+    repository: nhatsangvn/viet-journal
     pullPolicy: IfNotPresent
     tag: "latest"
 
@@ -135,6 +135,15 @@ mongodb:
     enabled: true
     storageClass: ""
     size: 5Gi
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+  volumePermissions:
+    enabled: true
   resources:
     limits:
       cpu: 500m
