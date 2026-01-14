@@ -55,6 +55,9 @@ public static class Extensions
         var journalDbConfig = configuration.GetSection("JournalDb").Get<Sql.DbConfig>();
         var identityDbConfig = configuration.GetSection("IdentityDb").Get<Sql.DbConfig>();
 
+        Console.WriteLine("JournalDb Config: " + System.Text.Json.JsonSerializer.Serialize(journalDbConfig));
+
+ 
         if (journalDbConfig == null)
         {
             throw new ArgumentNullException(nameof(journalDbConfig), "JournalDb configuration section is missing or invalid.");
