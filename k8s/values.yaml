@@ -1,4 +1,5 @@
-# Minimal Resource Configuration
+
+# helm upgrade -i viet-journal . -n viet-journal -f values.yaml
 # Optimized for 4CPU/4GB worker nodes
 # Use this file for resource-constrained environments
 
@@ -26,14 +27,14 @@ journal:
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-staging
     hosts:
-      - host: journal.example.com
+      - host: viet-journal.cmt8.sohan.cloud
         paths:
           - path: /
             pathType: Prefix
     tls:
       - secretName: journal-tls
         hosts:
-          - journal.example.com
+          - viet-journal.cmt8.sohan.cloud
 
   env:
     - name: ASPNETCORE_URLS
@@ -48,19 +49,19 @@ journal:
       cpu: 100m
       memory: 128Mi
 
-  livenessProbe:
-    httpGet:
-      path: /health
-      port: 80
-    initialDelaySeconds: 30
-    periodSeconds: 10
+  # livenessProbe:
+  #   httpGet:
+  #     path: /health
+  #     port: 80
+  #   initialDelaySeconds: 30
+  #   periodSeconds: 10
 
-  readinessProbe:
-    httpGet:
-      path: /health
-      port: 80
-    initialDelaySeconds: 5
-    periodSeconds: 5
+  # readinessProbe:
+  #   httpGet:
+  #     path: /health
+  #     port: 80
+  #   initialDelaySeconds: 5
+  #   periodSeconds: 5
 
 # SQL Server - OPTIMIZED: Reduced from 500m/1Gi to 250m/512Mi requests
 sqlserver:

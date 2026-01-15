@@ -29,7 +29,7 @@ spec:
         {{- end }}
         volumeMounts:
         - name: config
-          mountPath: /app/appsettings.Docker.json
+          mountPath: /app/appsettings.json
           subPath: appsettings.Docker.json
           readOnly: true
         {{- if .Values.journal.livenessProbe }}
