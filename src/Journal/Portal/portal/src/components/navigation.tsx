@@ -38,10 +38,10 @@ const items = [
         ]
     },
     {
-        title: "Workout",
-        url: "/workout",
+        title: "Workouts",
+        url: "/workouts",
         databases: [
-            { title: "MySQL", isPrimary: true, metadata: "100 rows" },
+            { title: "PostgreSQL", isPrimary: true, metadata: "100 rows" },
             { title: "MongoDB", isPrimary: false, metadata: "100 keys" },
         ]
     }
