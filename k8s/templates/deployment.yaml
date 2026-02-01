@@ -5,44 +5,72 @@ metadata:
   labels:
     {{- include "journal.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.journal.replicaCount }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "journal.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
         {{- include "journal.selectorLabels" . | nindent 8 }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "journal.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
       - name: journal
-        image: "{{ .Values.journal.image.repository }}:{{ .Values.journal.image.tag }}"
-        imagePullPolicy: {{ .Values.journal.image.pullPolicy }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - name: http
-          containerPort: {{ .Values.journal.service.targetPort }}
+          containerPort: {{ .Values.service.targetPort }}
           protocol: TCP
         env:
-        {{- range .Values.journal.env }}
-        - name: {{ .name }}
-          value: {{ .value | quote }}
-        {{- end }}
+        - name: ASPNETCORE_ENVIRONMENT
+          value: {{ .Values.config.aspnetcoreEnvironment | quote }}
+        - name: ASPNETCORE_URLS
+          value: {{ .Values.config.aspnetcoreUrls | quote }}
         volumeMounts:
         - name: config
           mountPath: /app/appsettings.json
-          subPath: appsettings.Docker.json
+          subPath: appsettings.k8s.json
           readOnly: true
-        {{- if .Values.journal.livenessProbe }}
+        {{- if .Values.livenessProbe }}
         livenessProbe:
-          {{- toYaml .Values.journal.livenessProbe | nindent 10 }}
+          {{- toYaml .Values.livenessProbe | nindent 10 }}
         {{- end }}
-        {{- if .Values.journal.readinessProbe }}
+        {{- if .Values.readinessProbe }}
         readinessProbe:
-          {{- toYaml .Values.journal.readinessProbe | nindent 10 }}
+          {{- toYaml .Values.readinessProbe | nindent 10 }}
         {{- end }}
         resources:
-          {{- toYaml .Values.journal.resources | nindent 10 }}
+          {{- toYaml .Values.resources | nindent 10 }}
       volumes:
       - name: config
         configMap:
           name: {{ include "journal.fullname" . }}-config
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

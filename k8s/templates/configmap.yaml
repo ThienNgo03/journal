@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "journal.labels" . | nindent 4 }}
 data:
-  appsettings.Docker.json: |
+  appsettings.k8s.json: |
     {
       "Logging": {
         "LogLevel": {
@@ -20,27 +20,27 @@ data:
         "Key": "ThisIsMySuperSecureKeyWithAtLeast32Chars!"
       },
       "JournalDb": {
-        "Host": "{{ include "journal.fullname" . }}-sqlserver",
+        "Host": "{{ include "journal.fullname" . }}-sqlserver.{{ .Release.Namespace }}.svc.cluster.local",
         "Port": "1433",
         "Database": "ssto-database",
         "Username": "sa",
         "Password": "{{ .Values.sqlserver.auth.saPassword }}"
       },
       "IdentityDb": {
-        "Host": "{{ include "journal.fullname" . }}-sqlserver",
+        "Host": "{{ include "journal.fullname" . }}-sqlserver.{{ .Release.Namespace }}.svc.cluster.local",
         "Port": "1433",
         "Database": "ssto-database",
         "Username": "sa",
         "Password": "{{ .Values.sqlserver.auth.saPassword }}"
       },
       "OpenSearch": {
-        "Host": "opensearch-cluster-master",
+        "Host": "opensearch-cluster-master.{{ .Release.Namespace }}.svc.cluster.local",
         "Port": 9200,
         "Username": "",
         "Password": ""
       },
       "MongoDb": {
-        "Host": "{{ .Release.Name }}-mongodb",
+        "Host": "{{ .Release.Name }}-mongodb.{{ .Release.Namespace }}.svc.cluster.local",
         "Port": 27017,
         "Database": "Journal",
         "Username": "root",
@@ -51,7 +51,7 @@ data:
         "SecretKey": "secretKey"
       },
       "CassandraDb": {
-        "ContactPoint": "{{ .Release.Name }}-cassandra",
+        "ContactPoint": "{{ .Release.Name }}-cassandra.{{ .Release.Namespace }}.svc.cluster.local",
         "Port": "9042",
         "Keyspace": "journal",
         "DataCenter": "{{ .Values.cassandra.cluster.datacenter }}"

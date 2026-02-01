@@ -5,9 +5,9 @@ metadata:
   labels:
     {{- include "journal.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.journal.service.type }}
+  type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.journal.service.port }}
+    - port: {{ .Values.service.port }}
       targetPort: http
       protocol: TCP
       name: http

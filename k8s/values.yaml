@@ -8,60 +8,108 @@ global:
   security:
     allowInsecureImages: true
 
-journal:
-  replicaCount: 1
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
 
-  image:
-    repository: docker.io/nhatsangvn/viet-journal
-    pullPolicy: IfNotPresent
-    tag: "latest"
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
 
-  service:
-    type: ClusterIP
-    port: 80
-    targetPort: 80
+# Pod annotations
+podAnnotations: {}
 
-  ingress:
-    enabled: true
-    className: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-staging
-    hosts:
-      - host: viet-journal.cmt8.sohan.cloud
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - secretName: journal-tls
-        hosts:
-          - viet-journal.cmt8.sohan.cloud
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
 
-  env:
-    - name: ASPNETCORE_URLS
-      value: "http://+:80"
+# Container security context
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
 
-  # OPTIMIZED: Reduced from 250m/256Mi to 100m/128Mi requests
-  resources:
-    limits:
-      cpu: 500m
-      memory: 256Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
+# Application configuration
+replicaCount: 1
 
-  # livenessProbe:
-  #   httpGet:
-  #     path: /health
-  #     port: 80
-  #   initialDelaySeconds: 30
-  #   periodSeconds: 10
+image:
+  repository: docker.io/nhatsangvn/viet-journal
+  pullPolicy: IfNotPresent
+  tag: "latest"
 
-  # readinessProbe:
-  #   httpGet:
-  #     path: /health
-  #     port: 80
-  #   initialDelaySeconds: 5
-  #   periodSeconds: 5
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+  hosts:
+    - host: viet-journal.cmt8.sohan.cloud
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: journal-tls
+      hosts:
+        - viet-journal.cmt8.sohan.cloud
+
+# Application environment configuration
+config:
+  aspnetcoreEnvironment: k8s
+  aspnetcoreUrls: "http://+:80"
+
+# Resource limits - optimized for 4CPU/4GB nodes
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Liveness and readiness probes
+# livenessProbe:
+#   httpGet:
+#     path: /health
+#     port: 80
+#   initialDelaySeconds: 30
+#   periodSeconds: 10
+
+# readinessProbe:
+#   httpGet:
+#     path: /health
+#     port: 80
+#   initialDelaySeconds: 5
+#   periodSeconds: 5
+
+# Autoscaling (disabled by default)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
 
 # SQL Server - OPTIMIZED: Reduced from 500m/1Gi to 250m/512Mi requests
 sqlserver:
@@ -88,8 +136,8 @@ sqlserver:
     runAsNonRoot: true
   resources:
     limits:
-      cpu: 1000m
-      memory: 1Gi
+      cpu: 1
+      memory: 2Gi
     requests:
       cpu: 250m
       memory: 512Mi
