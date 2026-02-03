@@ -63,6 +63,8 @@ spec:
   volumeClaimTemplates:
   - metadata:
       name: mssql-data
+      annotations:
+        helm.sh/resource-policy: keep
     spec:
       accessModes: [ "ReadWriteOnce" ]
       {{- if .Values.sqlserver.persistence.storageClass }}

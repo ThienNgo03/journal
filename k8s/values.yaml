@@ -161,6 +161,8 @@ postgresql:
       enabled: true
       storageClass: ""
       size: 5Gi
+      annotations:
+        helm.sh/resource-policy: keep
     resources:
       limits:
         cpu: 400m
@@ -187,6 +189,8 @@ mongodb:
     enabled: true
     storageClass: ""
     size: 5Gi
+    annotations:
+      helm.sh/resource-policy: keep
   resources:
     limits:
       cpu: 500m
@@ -215,6 +219,8 @@ cassandra:
     enabled: true
     storageClass: ""
     size: 5Gi
+    annotations:
+      helm.sh/resource-policy: keep
   resources:
     limits:
       cpu: 1000m
@@ -252,6 +258,8 @@ opensearch:
     enabled: true
     storageClass: ""
     size: 5Gi
+    annotations:
+      helm.sh/resource-policy: keep
   resources:
     limits:
       cpu: 600m
