@@ -16,14 +16,14 @@ public class RefitHttpClientHandler : HttpClientHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         // Nếu có SecretKey thì thêm HMAC headers
-        if (!string.IsNullOrEmpty(config.SecretKey) && !string.IsNullOrWhiteSpace(config.SecretKey))
-        {
-            string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
-            string nonce = Guid.NewGuid().ToString("N").Substring(0, 8);
-            request.Headers.Add("X-Timestamp", timestamp);
-            request.Headers.Add("X-Nonce", nonce);
-            request.Headers.Add("X-Machine-Hash", machineTokenService.ComputeHash(timestamp, nonce));
-        }
+        //if (!string.IsNullOrEmpty(config.SecretKey) && !string.IsNullOrWhiteSpace(config.SecretKey))
+        //{
+        //    string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+        //    string nonce = Guid.NewGuid().ToString("N").Substring(0, 8);
+        //    request.Headers.Add("X-Timestamp", timestamp);
+        //    request.Headers.Add("X-Nonce", nonce);
+        //    request.Headers.Add("X-Machine-Hash", machineTokenService.ComputeHash(timestamp, nonce));
+        //}
 
         // Nếu có JWT thì thêm Authorization header
         var jwt = tokenService.GetToken();

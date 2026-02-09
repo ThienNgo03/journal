@@ -138,9 +138,9 @@ public partial class ViewModel(
         }
 
         List<string> daysWithoutReps = new();
-        var daysWithSets = selectedDays.Select(sd => sd.Content).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var daysWithSets = SelectedDays.Select(sd => sd.Content).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var selectedDay in selectedDays)
+        foreach (var selectedDay in SelectedDays)
         {
             var hasSets = TotalSets.Any(ts => string.Equals(ts.Day, selectedDay.Content, StringComparison.OrdinalIgnoreCase) && ts.Reps > 0);
             if (!hasSets)

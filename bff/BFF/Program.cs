@@ -31,7 +31,7 @@ builder.Services.AddEndpoints(libraryConfig);
 
 var providerConfig = new Provider.Config(
     url: builder.Configuration["ProviderConfig:Url"] ?? "https://localhost:7063",
-    secretKey: builder.Configuration["ProviderConfig:SecretKey"] ?? "secretKey"
+    secretKey: builder.Configuration["ProviderConfig:SecretKey"]
 );
 builder.Services.AddProviders(providerConfig);
 
