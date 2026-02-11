@@ -1,4 +1,4 @@
-import { Calendar, ChevronDown, Table2 } from "lucide-react"
+import { Calendar, ChevronDown, InfoIcon, LockIcon, Table2 } from "lucide-react"
 
 import { Lineicons } from "@lineiconshq/react-lineicons";
 import { PostgresqlOutlined, MongodbOutlined, RadisOutlined, MysqlOutlined, Database2Outlined } from "@lineiconshq/free-icons";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar"
 import { ThemeToggle } from "./theme-toggle"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible"
+import { Button } from "./ui/button";
 
 const items = [
     {
@@ -53,7 +54,7 @@ const dbIcons: Record<string, React.ReactNode> = {
     redis: <Lineicons icon={RadisOutlined} className="w-4 h-4 text-red-500 stroke-1" />,
     mysql: <Lineicons icon={MysqlOutlined} className="w-4 h-4 text-black-500 stroke-1" />,
     fallback: <Lineicons icon={Database2Outlined} className="w-4 h-4 text-gray-500 stroke-1" />,
-    
+
 };
 
 export function AppNavigation() {
@@ -124,12 +125,18 @@ export function AppNavigation() {
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild>
                             <a href={"/about"}>
-                                <Calendar />
+                                <InfoIcon />
                                 <span>About</span>
                             </a>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
+                <Button variant={"outline"} asChild>
+                    <a href={"/sign-in"}>
+                        <LockIcon />
+                        <span>Sign In</span>
+                    </a>
+                </Button>
                 <div className="text-center text-xs text-gray-500">
                     &copy; 2024 Cool Server
                 </div>

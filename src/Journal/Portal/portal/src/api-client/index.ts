@@ -6,9 +6,10 @@ const portalClient = axios.create({
 });
 
 portalClient.interceptors.request.use((config) => {
-    // if () {
-    //     config.headers.Authorization = `Bearer ${'token'}`;
-    // }
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 
