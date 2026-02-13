@@ -1,4 +1,4 @@
-import { Calendar, ChevronDown, InfoIcon, LockIcon, Table2 } from "lucide-react"
+import { ChevronDown, InfoIcon, LockIcon, Table2 } from "lucide-react"
 
 import { Lineicons } from "@lineiconshq/react-lineicons";
 import { PostgresqlOutlined, MongodbOutlined, RadisOutlined, MysqlOutlined, Database2Outlined } from "@lineiconshq/free-icons";
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/sidebar"
 import { ThemeToggle } from "./theme-toggle"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible"
-import { Button } from "./ui/button";
 
 const items = [
     {
@@ -129,14 +128,14 @@ export function AppNavigation() {
                                 <span>About</span>
                             </a>
                         </SidebarMenuButton>
+                        <SidebarMenuButton variant={"outline"} asChild>
+                            <a href={"/sign-in"}>
+                                <LockIcon />
+                                <span>Sign In</span>
+                            </a>
+                        </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
-                <Button variant={"outline"} asChild>
-                    <a href={"/sign-in"}>
-                        <LockIcon />
-                        <span>Sign In</span>
-                    </a>
-                </Button>
                 <div className="text-center text-xs text-gray-500">
                     &copy; 2024 Cool Server
                 </div>

@@ -10,7 +10,7 @@ namespace Journal.Authentication;
 
 [ApiController]
 [Route("api/authentication")]
-public class Controller:ControllerBase
+public class Controller : ControllerBase
 {
     private readonly ILogger<Controller> _logger;
     private readonly IMessageBus _messageBus;
@@ -101,6 +101,27 @@ public class Controller:ControllerBase
         return CreatedAtAction(nameof(Get), response);
     }
 
+    [HttpGet]
+    [Route("profile")]
+    [Authorize]
+    public async Task<IActionResult> GetProfileAsync()
+    {
+        var email = User.FindFirstValue(JwtRegisteredClaimNames.Email);
+        if (email == null)
+            return Unauthorized("Invalid token.");
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+            return NotFound("User not found.");
+
+        var profile = new
+        {
+            user.UserName,
+            user.Email,
+            user.PhoneNumber
+        };
+        return Ok(profile);
+    }
+
     private string GenerateToken(string email)
     {
         var key = Encoding.UTF8.GetBytes(_configuration["JWT:Key"]!);
@@ -120,7 +141,7 @@ public class Controller:ControllerBase
 
         var securityKey = new SymmetricSecurityKey(key);
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
+         
         var token = new JwtSecurityToken(
             issuer: issuer,
             audience: audience,
