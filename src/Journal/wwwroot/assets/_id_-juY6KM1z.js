@@ -1,0 +1,1 @@
+import{g as e,j as t}from"./index-Jes1nCj3.js";import{u as r}from"./get-muscle-B6cgO4S7.js";import"./getErrorMessage-DVxqjZy-.js";import"./index-otjVXVq-.js";function m(){const{id:i}=e(),{data:s}=r({ids:i});return s?.items.length===0?t.jsx("div",{children:"Muscle not found"}):t.jsx("div",{children:JSON.stringify(s?.items)})}export{m as default};

@@ -137,7 +137,7 @@ export function AppNavigation() {
                     </SidebarMenuItem>
                 </SidebarMenu>
                 <div className="text-center text-xs text-gray-500">
-                    &copy; 2024 Cool Server
+                    &copy; 2024 Journal Microservice
                 </div>
             </SidebarFooter>
         </Sidebar >

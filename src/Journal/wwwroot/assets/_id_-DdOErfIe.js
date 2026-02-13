@@ -1,0 +1,1 @@
+import{g as t,j as e}from"./index-Jes1nCj3.js";import{u as r}from"./get-exercise-W67RtiSH.js";import"./getErrorMessage-DVxqjZy-.js";import"./index-otjVXVq-.js";function a(){const{id:i}=t(),{data:s}=r({ids:i,include:"muscles"});return s?.items.length===0?e.jsx("div",{children:"Exercise not found"}):e.jsx("div",{children:JSON.stringify(s?.items)})}export{a as default};

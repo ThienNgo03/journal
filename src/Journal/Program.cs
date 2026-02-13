@@ -1,4 +1,5 @@
-﻿using Journal.Authentication;
+﻿using System.Text;
+using Journal.Authentication;
 using Journal.Databases;
 using Journal.Databases.Identity;
 using Journal.Databases.Sql;
@@ -8,6 +9,8 @@ using Journal.Journeys;
 using Journal.Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 builder.Services.AddControllers().AddNewtonsoftJson();
 

@@ -11,7 +11,6 @@ services:
     ports:
       - 5000:80
     depends_on:
-      - sqlserver
       - postgres
       - mongodb
       - cassandra
@@ -25,13 +24,13 @@ services:
       - journal
 
   postgres:
-    image: postgres
+    image: postgres:18
     environment:
       - POSTGRES_PASSWORD=postgrespw
     ports:
       - 5432:5432
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
 
   mongodb:
     image: mongo:6.0
@@ -56,18 +55,6 @@ services:
     volumes:
       - cassandradb:/var/lib/cassandra
 
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=SqlServer2022!
-      - MSSQL_PID=Developer
-    ports:
-      - 1433:1433
-    volumes:
-      - sqlserverdata:/var/opt/mssql
-    hostname: sqlserver
-
   opensearch:
     image: opensearchproject/opensearch:latest
     environment:
@@ -85,5 +72,4 @@ volumes:
   pgdata:
   mongodata:
   cassandradb:
-  sqlserverdata:
   opensearchdata:
