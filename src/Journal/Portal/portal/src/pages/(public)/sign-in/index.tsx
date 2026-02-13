@@ -65,7 +65,7 @@ export default function Page() {
                                 <Alert variant="destructive">
                                     <AlertCircle className="h-4 w-4" />
                                     <AlertDescription>
-                                        {error?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại account và mật khẩu."}
+                                        {error?.message || "Login failed. Please check your account and password."}
                                     </AlertDescription>
                                 </Alert>
                             )}
@@ -112,10 +112,19 @@ export default function Page() {
                                 )}
                             />
                             <Button type="submit" className="w-full" disabled={isPending}>
-                                {isPending ? "Đang đăng nhập..." : "Đăng nhập"}
+                                {isPending ? "Processing..." : "Sign In"}
                             </Button>
                         </form>
                     </Form>
+                    <div className="mt-6 text-center text-sm text-muted-foreground">
+                        <p>Don't have an account?</p>
+                        <p className="mt-1">
+                            Please contact <span className="font-semibold text-foreground">Thiên Ngố</span> or <span className="font-semibold text-foreground">Việt Tồ</span> to request access.
+                        </p>
+                        <p className="mt-1 text-xs">
+                            Admins will verify and notify you when your account is ready.
+                        </p>
+                    </div>
                 </CardContent>
             </Card>
         </div>

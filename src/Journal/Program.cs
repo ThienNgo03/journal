@@ -74,4 +74,7 @@ app.MapHub<Journal.Profiles.Hub>("users-hub");
 //await Journal.Databases.Identity.Initializer.InitDb(app);
 //await Journal.Databases.App.Initializer.InitDb(app);
 
+app.UseStaticFiles();	
+app.MapFallbackToFile("index.html");
+
 app.Run();
