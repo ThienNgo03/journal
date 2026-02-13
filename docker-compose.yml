@@ -18,7 +18,7 @@ services:
       - opensearch
 
   portal:
-    image: thienngo03/portal:1.0
+    image: thienngo03/journal-portal:1.0
     ports:
       - "5173:80"
     depends_on:

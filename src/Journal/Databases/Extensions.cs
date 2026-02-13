@@ -102,6 +102,13 @@ public static class Extensions
                 .AddEntityFrameworkStores<IdentityContext>()
                 .AddDefaultTokenProviders();
 
+        Console.WriteLine("✅ JournalDbConfig:");
+        Console.WriteLine($"    Host: {journalDbConfig.Host}");
+        Console.WriteLine($"    Port: {journalDbConfig.Port}");
+        Console.WriteLine($"    Database: {journalDbConfig.Database}");
+        Console.WriteLine($"    Username: {journalDbConfig.Username}");
+        Console.WriteLine($"    Password: {journalDbConfig.Password}");
+
         var mongoDbConfig = configuration.GetSection("MongoDb").Get<MongoDb.DbConfig>();
         if (mongoDbConfig == null)
         {
