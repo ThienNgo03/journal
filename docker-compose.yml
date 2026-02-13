@@ -1,7 +1,7 @@
 services:
 
   journal:
-    image: coolserver/journal:latest
+    image: thienngo03/journal:2.4
     build:
       context: .
       dockerfile: src/Journal/Dockerfile
@@ -9,13 +9,20 @@ services:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=http://+:80
     ports:
-      - 6000:80
+      - 5000:80
     depends_on:
       - sqlserver
       - postgres
       - mongodb
       - cassandra
       - opensearch
+
+  portal:
+    image: thienngo03/portal:1.0
+    ports:
+      - "5173:80"
+    depends_on:
+      - journal
 
   postgres:
     image: postgres
