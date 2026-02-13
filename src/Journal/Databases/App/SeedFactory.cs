@@ -43,7 +43,7 @@ public class SeedFactory
                             Name = row["Name"].ToString()!,
                             Description = row["Description"].ToString()!,
                             Type = row["Type"].ToString()!,
-                            CreatedDate = DateTime.Now,
+                            CreatedDate = DateTime.UtcNow, 
                         }).ToList();
         context.Exercises.AddRange(exercise);
         await context.SaveChangesAsync();
@@ -82,7 +82,7 @@ public class SeedFactory
                         {
                             Id = Guid.Parse(row["Id"].ToString()!),
                             Name = row["Name"].ToString()!,
-                            CreatedDate = DateTime.Now,
+                            CreatedDate = DateTime.UtcNow,
                         }).ToList();
         context.Muscles.AddRange(muscle);
         await context.SaveChangesAsync();
@@ -123,7 +123,7 @@ public class SeedFactory
                             Id = Guid.Parse(row["Id"].ToString()!),
                             ExerciseId = Guid.Parse(row["ExerciseId"].ToString()!),
                             MuscleId = Guid.Parse(row["MuscleId"].ToString()!),
-                            CreatedDate = DateTime.Now,
+                            CreatedDate = DateTime.UtcNow,
                         }).ToList();
         context.ExerciseMuscles.AddRange(exerciseMuscle);
         await context.SaveChangesAsync();

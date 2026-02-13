@@ -65,38 +65,34 @@ public static class Extensions
         }
         var journalConnectionString = new Sql.ConnectionStringBuilder()
             .WithHost(journalDbConfig.Host)
-            .WithPort(journalDbConfig.Port)
+            .WithPort(journalDbConfig.Port!.Value)
             .WithDatabase(journalDbConfig.Database)
             .WithUsername(journalDbConfig.Username)
             .WithPassword(journalDbConfig.Password)
-            //.WithTrustedConnection()
-            .WithTrustServerCertificate()
             .Build();
 
         var identityConnectionString = new Sql.ConnectionStringBuilder()
             .WithHost(identityDbConfig.Host)
-            .WithPort(identityDbConfig.Port)
+            .WithPort(identityDbConfig.Port!.Value)
             .WithDatabase(identityDbConfig.Database)
             .WithUsername(identityDbConfig.Username)
             .WithPassword(identityDbConfig.Password)
-            //.WithTrustedConnection()
-            .WithTrustServerCertificate()
             .Build();
 
         services.AddDbContext<JournalDbContext>(x =>
         {
             x.EnableSensitiveDataLogging();
-            x.UseSqlServer(journalConnectionString, sqlServerOptions => sqlServerOptions.EnableRetryOnFailure(
+            x.UseNpgsql(journalConnectionString, x => x.EnableRetryOnFailure(
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(30),
-                            errorNumbersToAdd: null));
+                            errorCodesToAdd: null));
         });
 
         services.AddDbContext<IdentityContext>(x => 
-            x.UseSqlServer(identityConnectionString, sqlServerOptions => sqlServerOptions.EnableRetryOnFailure(
+            x.UseNpgsql(identityConnectionString, x => x.EnableRetryOnFailure(
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(30),
-                            errorNumbersToAdd: null)));
+                            errorCodesToAdd: null)));
 
         services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<IdentityContext>()

@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Npgsql;
 
 namespace Journal.Databases.Identity;
 
@@ -20,14 +20,12 @@ public static class Initializer
         {
             Console.WriteLine("Checking database connection...");
 
-            // Kiểm tra xem có thể kết nối được không
             var canConnect = context.Database.CanConnect();
 
             if (canConnect)
             {
                 Console.WriteLine("✓ Database connection successful");
 
-                // Database đã tồn tại, chỉ apply migrations
                 var pendingMigrations = context.Database.GetPendingMigrations().ToList();
 
                 if (pendingMigrations.Any())
@@ -48,7 +46,6 @@ public static class Initializer
             }
             else
             {
-                // Database chưa tồn tại, tạo mới và apply migrations
                 Console.WriteLine("Database does not exist. Creating and applying migrations...");
                 context.Database.Migrate();
                 Console.WriteLine("✓ Database created and migrations applied successfully.");
@@ -57,35 +54,16 @@ public static class Initializer
             var appliedMigrations = context.Database.GetAppliedMigrations().ToList();
             Console.WriteLine($"Total applied migrations: {appliedMigrations.Count}");
         }
-        catch (SqlException ex) when (ex.Number == 1801)
+            catch (PostgresException ex) when (ex.SqlState == "42P04")
         {
-            // Database đã tồn tại nhưng CanConnect() trả về false
-            // Đây là edge case, chỉ cần apply migrations
             Console.WriteLine("Database already exists. Checking for pending migrations...");
 
             var pendingMigrations = context.Database.GetPendingMigrations().ToList();
             if (pendingMigrations.Any())
             {
                 Console.WriteLine($"Found {pendingMigrations.Count} pending migration(s). Applying...");
-
-                // Sử dụng MigrateAsync với cancellation token để tránh deadlock
-                var appliedCount = 0;
-                foreach (var migration in pendingMigrations)
-                {
-                    try
-                    {
-                        Console.WriteLine($"  Applying: {migration}");
-                        // Apply từng migration một
-                        context.Database.ExecuteSqlRaw($"-- Migration: {migration}");
-                        appliedCount++;
-                    }
-                    catch (Exception migEx)
-                    {
-                        Console.WriteLine($"  ⚠️ Failed to apply {migration}: {migEx.Message}");
-                    }
-                }
-
-                Console.WriteLine($"✓ Applied {appliedCount} migrations.");
+                context.Database.Migrate();
+                Console.WriteLine("✓ Migrations applied successfully.");
             }
             else
             {
