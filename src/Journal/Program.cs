@@ -55,6 +55,11 @@ if (app.Environment.IsEnvironment("Docker"))
     app.UseCors("AllowLocalhost5173");
 }
 
+if (app.Environment.IsEnvironment("UtilitiesDocker"))
+{
+    app.UseCors("AllowLocalhost5173");
+}
+
 if (app.Environment.IsEnvironment("k8s"))
 {
     app.UseCors("AllowLocalhost5173");
