@@ -1,7 +1,7 @@
 services:
 
   journal:
-    image: thienngo03/journal:2.4
+    image: thienngo03/journal:2.6
     build:
       context: .
       dockerfile: src/Journal/Dockerfile
