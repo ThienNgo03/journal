@@ -1,5 +1,5 @@
 import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar";
-import { AppNavigation } from "./components/navigation";
+import { AppNavigation } from "./components/sidebar/navigation";
 import { Card } from "./components/ui/card";
 
 export function Layouts({ children }: { children: React.ReactNode }) {
