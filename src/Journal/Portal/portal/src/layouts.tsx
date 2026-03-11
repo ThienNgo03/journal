@@ -8,7 +8,7 @@ export function Layouts({ children }: { children: React.ReactNode }) {
             <AppNavigation />
             <div className="flex flex-col w-full p-2 pl-0">
                 <SidebarTrigger />
-                <Card className="p-4 h-full rounded-[10px] shadow-lg bg-background"> 
+                <Card className="p-4 h-full shadow-lg bg-background"> 
                     {children}
                 </Card>
             </div>

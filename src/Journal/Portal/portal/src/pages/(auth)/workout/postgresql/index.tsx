@@ -1,5 +1,5 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { GridView } from "./_components/grid-view"
+import { Tabs, TabsTrigger, TabsContent, TabsList } from "@/components/ui/tabs";
+import { GridView } from "../_components/grid-view";
 
 export default function Page() {
     return (

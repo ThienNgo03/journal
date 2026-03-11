@@ -51,4 +51,6 @@ const gridTheme = themeQuartz.withParams({
     headerColumnResizeHandleHeight: '70%',
     headerColumnBorder: false,
     columnBorder: false,
+    borderRadius: 0,
+    wrapperBorderRadius: 0,
 });
