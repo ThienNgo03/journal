@@ -7,7 +7,7 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 
-export function CreateFrom() {
+export function CreateForm() {
     const { form } = useCreateForm();
     const { mutate, isPending } = useCreateExercise();
     const navigate = useNavigate();

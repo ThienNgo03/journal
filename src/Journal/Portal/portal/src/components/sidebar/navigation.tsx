@@ -56,7 +56,7 @@ export function AppNavigation() {
 
     return (
         <Sidebar variant="floating" collapsible="icon" className="bg-background">
-            <SidebarContent className="bg-background rounded-[8px]">
+            <SidebarContent className="bg-background">
                 <SidebarGroup>
                     <SidebarGroupLabel className="flex justify-between">
                         <div>
