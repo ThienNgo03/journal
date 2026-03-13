@@ -60,6 +60,32 @@
     <Content Remove="C:\Users\Thin\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-netcore\tr\System.CommandLine.resources.dll" />
     <Content Remove="C:\Users\Thin\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-netcore\zh-Hans\System.CommandLine.resources.dll" />
     <Content Remove="C:\Users\Thin\.nuget\packages\microsoft.codeanalysis.workspaces.msbuild\4.14.0\contentFiles\any\any\BuildHost-netcore\zh-Hant\System.CommandLine.resources.dll" />
+    <Content Remove="wwwroot\assets\alert-dialog-BfQc-BZI.js" />
+    <Content Remove="wwwroot\assets\create-1m-tgC0R.js" />
+    <Content Remove="wwwroot\assets\create-DKTlSXp5.js" />
+    <Content Remove="wwwroot\assets\get-exercise-Cc_cBD3V.js" />
+    <Content Remove="wwwroot\assets\get-muscle-Dl62msPZ.js" />
+    <Content Remove="wwwroot\assets\get-workout-D7rg9izg.js" />
+    <Content Remove="wwwroot\assets\index-B95T_GMh.js" />
+    <Content Remove="wwwroot\assets\index-CCdCcHCh.js" />
+    <Content Remove="wwwroot\assets\index-CDoBtBw-.css" />
+    <Content Remove="wwwroot\assets\index-D2I_oP6K.js" />
+    <Content Remove="wwwroot\assets\index-dENV6XB-.js" />
+    <Content Remove="wwwroot\assets\index-DH3dvqN9.js" />
+    <Content Remove="wwwroot\assets\index-Dl7V8VIS.js" />
+    <Content Remove="wwwroot\assets\index-lAKSwAX1.js" />
+    <Content Remove="wwwroot\assets\index-_JIqzKku.js" />
+    <Content Remove="wwwroot\assets\input-DtYZKEEF.js" />
+    <Content Remove="wwwroot\assets\not-found-BUaax8DA.svg" />
+    <Content Remove="wwwroot\assets\pagination-DyL4v8L7.js" />
+    <Content Remove="wwwroot\assets\useMutation-BeKFYgGf.js" />
+    <Content Remove="wwwroot\assets\zod-BOSSVu7s.js" />
+    <Content Remove="wwwroot\assets\_...all_-CTdBqs6_.js" />
+    <Content Remove="wwwroot\assets\_id_-CW21YC0F.js" />
+    <Content Remove="wwwroot\assets\_id_-DG4L9-sg.js" />
+    <Content Remove="wwwroot\assets\_id_-nPkMXQaf.js" />
+    <Content Remove="wwwroot\index.html" />
+    <Content Remove="wwwroot\vite.svg" />
   </ItemGroup>
 
   <ItemGroup>
@@ -101,6 +127,35 @@
 
 	<ItemGroup>
 	  <Folder Include="Notes\Create\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="wwwroot\assets\alert-dialog-BfQc-BZI.js" />
+	  <None Include="wwwroot\assets\create-1m-tgC0R.js" />
+	  <None Include="wwwroot\assets\create-DKTlSXp5.js" />
+	  <None Include="wwwroot\assets\get-exercise-Cc_cBD3V.js" />
+	  <None Include="wwwroot\assets\get-muscle-Dl62msPZ.js" />
+	  <None Include="wwwroot\assets\get-workout-D7rg9izg.js" />
+	  <None Include="wwwroot\assets\index-B95T_GMh.js" />
+	  <None Include="wwwroot\assets\index-CCdCcHCh.js" />
+	  <None Include="wwwroot\assets\index-CDoBtBw-.css" />
+	  <None Include="wwwroot\assets\index-D2I_oP6K.js" />
+	  <None Include="wwwroot\assets\index-dENV6XB-.js" />
+	  <None Include="wwwroot\assets\index-DH3dvqN9.js" />
+	  <None Include="wwwroot\assets\index-Dl7V8VIS.js" />
+	  <None Include="wwwroot\assets\index-lAKSwAX1.js" />
+	  <None Include="wwwroot\assets\index-_JIqzKku.js" />
+	  <None Include="wwwroot\assets\input-DtYZKEEF.js" />
+	  <None Include="wwwroot\assets\not-found-BUaax8DA.svg" />
+	  <None Include="wwwroot\assets\pagination-DyL4v8L7.js" />
+	  <None Include="wwwroot\assets\useMutation-BeKFYgGf.js" />
+	  <None Include="wwwroot\assets\zod-BOSSVu7s.js" />
+	  <None Include="wwwroot\assets\_...all_-CTdBqs6_.js" />
+	  <None Include="wwwroot\assets\_id_-CW21YC0F.js" />
+	  <None Include="wwwroot\assets\_id_-DG4L9-sg.js" />
+	  <None Include="wwwroot\assets\_id_-nPkMXQaf.js" />
+	  <None Include="wwwroot\index.html" />
+	  <None Include="wwwroot\vite.svg" />
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="Notes\Create\create.proto" GrpcServices="Server" />

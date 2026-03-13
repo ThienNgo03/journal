@@ -1,0 +1,1 @@
+import{q as i,j as t}from"./index-DH3dvqN9.js";import{u as r}from"./get-muscle-Dl62msPZ.js";function u(){const{id:e}=i(),{data:s}=r({ids:e});return s?.items.length===0?t.jsx("div",{children:"Muscle not found"}):t.jsx("div",{children:JSON.stringify(s?.items)})}export{u as default};

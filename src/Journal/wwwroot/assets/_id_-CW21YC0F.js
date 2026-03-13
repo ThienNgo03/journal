@@ -1,0 +1,1 @@
+import{q as i,j as s}from"./index-DH3dvqN9.js";import{u as o}from"./get-workout-D7rg9izg.js";function u(){const{id:r}=i(),{data:t}=o({ids:r});return t?.items.length===0?s.jsx("div",{children:"Workout not found"}):s.jsx("div",{children:JSON.stringify(t?.items)})}export{u as default};
