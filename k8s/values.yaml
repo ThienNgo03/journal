@@ -142,16 +142,18 @@ sqlserver:
       cpu: 250m
       memory: 512Mi
 
-# PostgreSQL - OPTIMIZED: Reduced from 250m/256Mi to 100m/128Mi requests
-# NOTE: Not used by the application, can be disabled to save resources
+# PostgreSQL - used by JournalDb and IdentityDb
 postgresql:
-  enabled: false  # Disabled by default to save resources
+  enabled: true
+  fullnameOverride: "postgres"  # Service will be named "postgres" to match app config
   image:
     registry: docker.io
     repository: bitnamilegacy/postgresql
   auth:
-    postgresPassword: "postgrespw"
-    database: "journaldb"
+    postgresPassword: "Pgr3$Jnl!K9mVx2q"
+    username: "postgres"
+    password: "Pgr3$Jnl!K9mVx2q"
+    database: "postgres"
   primary:
     service:
       type: ClusterIP
@@ -165,10 +167,10 @@ postgresql:
         helm.sh/resource-policy: keep
     resources:
       limits:
-        cpu: 400m
+        cpu: 200m
         memory: 256Mi
       requests:
-        cpu: 100m
+        cpu: 50m
         memory: 128Mi
 
 # MongoDB - OPTIMIZED: Reduced from 250m/256Mi to 100m/256Mi requests

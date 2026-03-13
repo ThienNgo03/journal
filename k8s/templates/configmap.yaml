@@ -20,18 +20,18 @@ data:
         "Key": "ThisIsMySuperSecureKeyWithAtLeast32Chars!"
       },
       "JournalDb": {
-        "Host": "{{ include "journal.fullname" . }}-sqlserver.{{ .Release.Namespace }}.svc.cluster.local",
-        "Port": "1433",
-        "Database": "ssto-database",
-        "Username": "sa",
-        "Password": "{{ .Values.sqlserver.auth.saPassword }}"
+        "Host": "postgres",
+        "Port": "5432",
+        "Database": "{{ .Values.postgresql.auth.database }}",
+        "Username": "{{ .Values.postgresql.auth.username }}",
+        "Password": "{{ .Values.postgresql.auth.password }}"
       },
       "IdentityDb": {
-        "Host": "{{ include "journal.fullname" . }}-sqlserver.{{ .Release.Namespace }}.svc.cluster.local",
-        "Port": "1433",
-        "Database": "ssto-database",
-        "Username": "sa",
-        "Password": "{{ .Values.sqlserver.auth.saPassword }}"
+        "Host": "postgres",
+        "Port": "5432",
+        "Database": "{{ .Values.postgresql.auth.database }}",
+        "Username": "{{ .Values.postgresql.auth.username }}",
+        "Password": "{{ .Values.postgresql.auth.password }}"
       },
       "OpenSearch": {
         "Host": "opensearch-cluster-master.{{ .Release.Namespace }}.svc.cluster.local",
