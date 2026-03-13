@@ -1,7 +1,7 @@
 services:
 
   journal:
-    image: thienngo03/journal:2.7
+    image: thienngo03/journal:2.8
     build:
       context: .
       dockerfile: src/Journal/Dockerfile
@@ -15,13 +15,6 @@ services:
       - mongodb
       - cassandra
       - opensearch
-
-  portal:
-    image: thienngo03/journal-portal:1.1
-    ports:
-      - "5173:80"
-    depends_on:
-      - journal
 
   postgres:
     image: postgres:18

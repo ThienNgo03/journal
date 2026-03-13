@@ -14,6 +14,8 @@ COPY src/Journal/Exercises/Exercises.xlsx /app/src/Journal/out/Exercises/Exercis
 COPY src/Journal/Muscles/Muscles.xlsx /app/src/Journal/out/Muscles/Muscles.xlsx
 COPY src/Journal/ExerciseMuscles/ExerciseMuscles.xlsx /app/src/Journal/out/ExerciseMuscles/ExerciseMuscles.xlsx
 
+COPY src/Journal/wwwroot /app/src/Journal/out/wwwroot
+
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 
