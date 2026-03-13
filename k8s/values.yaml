@@ -1,4 +1,4 @@
-
+# helm diff upgrade viet-journal ./ -n viet-journal -f values.yaml --three-way-merge
 # helm upgrade -i viet-journal . -n viet-journal -f values.yaml
 # Optimized for 4CPU/4GB worker nodes
 # Use this file for resource-constrained environments
@@ -39,9 +39,9 @@ securityContext:
 replicaCount: 1
 
 image:
-  repository: docker.io/nhatsangvn/viet-journal
+  repository: docker.io/thienngo03/journal
   pullPolicy: IfNotPresent
-  tag: "latest"
+  tag: 2.5
 
 # Service configuration
 service:
@@ -54,7 +54,7 @@ ingress:
   enabled: true
   className: nginx
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-staging
+    cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
     - host: viet-journal.cmt8.sohan.cloud
       paths:
@@ -74,10 +74,10 @@ config:
 resources:
   limits:
     cpu: 500m
-    memory: 256Mi
+    memory: 512Mi
   requests:
     cpu: 100m
-    memory: 128Mi
+    memory: 256Mi
 
 # Liveness and readiness probes
 # livenessProbe:
@@ -202,6 +202,8 @@ mongodb:
 # Cassandra - OPTIMIZED: Reduced from 500m/1Gi to 250m/512Mi requests
 cassandra:
   enabled: true
+  dbUser:
+    password: jSvtH9ERz8
   image:
     registry: docker.io
     repository: bitnamilegacy/cassandra
