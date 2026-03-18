@@ -1,35 +1,37 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 
-public class HmacAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+namespace Journal.Authentication.Hmac;
+
+public class HmacAuthenticationHandler : AuthenticationHandler<HmacOptions>
 {
-    private readonly IConfiguration _configuration;
     private readonly IMemoryCache _cache;
+    private readonly IOptionsMonitor<HmacOptions> _options;
 
     public HmacAuthenticationHandler(
-        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        IOptionsMonitor<HmacOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
         ISystemClock clock,
-        IConfiguration configuration,
         IMemoryCache cache)
         : base(options, logger, encoder, clock)
     {
-        _configuration = configuration;
         _cache = cache;
+        _options = options;
     }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var headers = Request.Headers;
-        var timestamp = headers["X-Timestamp"].FirstOrDefault();
-        var machineHash = headers["X-Machine-Hash"].FirstOrDefault();
-        var nonce = headers["X-Nonce"].FirstOrDefault();
-        var secretKey = _configuration["MachineAuth:SecretKey"];
+        var timestamp = headers[_options.CurrentValue.HeaderTimestamp].FirstOrDefault();
+        var machineHash = headers[_options.CurrentValue.HeaderMachineHash].FirstOrDefault();
+        var nonce = headers[_options.CurrentValue.HeaderNonce].FirstOrDefault();
+        var secretKey = _options.CurrentValue.SecretKey;
 
         if (string.IsNullOrEmpty(timestamp) || string.IsNullOrEmpty(machineHash) || string.IsNullOrEmpty(nonce))
         {
@@ -42,7 +44,17 @@ public class HmacAuthenticationHandler : AuthenticationHandler<AuthenticationSch
             return Task.FromResult(AuthenticateResult.Fail("Replay attack detected."));
         }
 
-        _cache.Set(nonceKey, true, TimeSpan.FromMinutes(5));
+        _cache.Set(nonceKey, true, Options.NonceLifetime);
+
+        var tsClient = DateTime.ParseExact(timestamp, "yyyyMMddHHmmss", null);
+        var tsServer = DateTime.Now; // hoặc DateTime.UtcNow nếu muốn chuẩn hóa
+
+        var diffMinutes = Math.Abs((tsClient - tsServer).TotalMinutes);
+
+        if (diffMinutes > 5 || diffMinutes < 0)
+        {
+            return Task.FromResult(AuthenticateResult.Fail("Timestamp is too old or too far in the future."));
+        }
 
         var message = timestamp + nonce;
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secretKey));
